@@ -1,0 +1,16 @@
+C:\PGTA\PGTA_P2\AsterixDecoder\AsterixDecoder\bin\Debug\net5.0\AsterixDecoder.exe
+C:\PGTA\PGTA_P2\AsterixDecoder\AsterixDecoder\bin\Debug\net5.0\AsterixDecoder.deps.json
+C:\PGTA\PGTA_P2\AsterixDecoder\AsterixDecoder\bin\Debug\net5.0\AsterixDecoder.runtimeconfig.json
+C:\PGTA\PGTA_P2\AsterixDecoder\AsterixDecoder\bin\Debug\net5.0\AsterixDecoder.runtimeconfig.dev.json
+C:\PGTA\PGTA_P2\AsterixDecoder\AsterixDecoder\bin\Debug\net5.0\AsterixDecoder.dll
+C:\PGTA\PGTA_P2\AsterixDecoder\AsterixDecoder\bin\Debug\net5.0\ref\AsterixDecoder.dll
+C:\PGTA\PGTA_P2\AsterixDecoder\AsterixDecoder\bin\Debug\net5.0\AsterixDecoder.pdb
+C:\PGTA\PGTA_P2\AsterixDecoder\AsterixDecoder\obj\Debug\net5.0\AsterixDecoder.csproj.AssemblyReference.cache
+C:\PGTA\PGTA_P2\AsterixDecoder\AsterixDecoder\obj\Debug\net5.0\AsterixDecoder.GeneratedMSBuildEditorConfig.editorconfig
+C:\PGTA\PGTA_P2\AsterixDecoder\AsterixDecoder\obj\Debug\net5.0\AsterixDecoder.AssemblyInfoInputs.cache
+C:\PGTA\PGTA_P2\AsterixDecoder\AsterixDecoder\obj\Debug\net5.0\AsterixDecoder.AssemblyInfo.cs
+C:\PGTA\PGTA_P2\AsterixDecoder\AsterixDecoder\obj\Debug\net5.0\AsterixDecoder.csproj.CoreCompileInputs.cache
+C:\PGTA\PGTA_P2\AsterixDecoder\AsterixDecoder\obj\Debug\net5.0\AsterixDecoder.dll
+C:\PGTA\PGTA_P2\AsterixDecoder\AsterixDecoder\obj\Debug\net5.0\ref\AsterixDecoder.dll
+C:\PGTA\PGTA_P2\AsterixDecoder\AsterixDecoder\obj\Debug\net5.0\AsterixDecoder.pdb
+C:\PGTA\PGTA_P2\AsterixDecoder\AsterixDecoder\obj\Debug\net5.0\AsterixDecoder.genruntimeconfig.cache
