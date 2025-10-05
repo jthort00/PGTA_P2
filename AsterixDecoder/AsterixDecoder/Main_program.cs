@@ -12,7 +12,7 @@ namespace AsterixDecoder
             try
             {
                 // Leer el archivo binario
-                var reader = new BinaryFileReader("C:\\Users\\fedep\\source\\repos\\jthort00\\PGTA_P2\\AsterixDecoder\\AsterixDecoder\\bin\\Debug\\net5.0\\datos_asterix_radar.ast");
+                var reader = new BinaryFileReader("datos_asterix_radar.ast");
                 var messages = reader.ReadMessages();
 
                 Console.WriteLine("=".PadRight(80, '='));

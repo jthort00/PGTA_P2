@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\fedep\\Source\\Repos\\jthort00\\PGTA_P2\\AsterixDecoder\\AsterixDecoder\\AsterixDecoder.csproj": {}
+    "C:\\Users\\fedep\\source\\repos\\jthort00\\PGTA_P2\\AsterixDecoder\\AsterixDecoder\\AsterixDecoder.csproj": {}
   },
   "projects": {
-    "C:\\Users\\fedep\\Source\\Repos\\jthort00\\PGTA_P2\\AsterixDecoder\\AsterixDecoder\\AsterixDecoder.csproj": {
+    "C:\\Users\\fedep\\source\\repos\\jthort00\\PGTA_P2\\AsterixDecoder\\AsterixDecoder\\AsterixDecoder.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\fedep\\Source\\Repos\\jthort00\\PGTA_P2\\AsterixDecoder\\AsterixDecoder\\AsterixDecoder.csproj",
+        "projectUniqueName": "C:\\Users\\fedep\\source\\repos\\jthort00\\PGTA_P2\\AsterixDecoder\\AsterixDecoder\\AsterixDecoder.csproj",
         "projectName": "AsterixDecoder",
-        "projectPath": "C:\\Users\\fedep\\Source\\Repos\\jthort00\\PGTA_P2\\AsterixDecoder\\AsterixDecoder\\AsterixDecoder.csproj",
+        "projectPath": "C:\\Users\\fedep\\source\\repos\\jthort00\\PGTA_P2\\AsterixDecoder\\AsterixDecoder\\AsterixDecoder.csproj",
         "packagesPath": "C:\\Users\\fedep\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\fedep\\Source\\Repos\\jthort00\\PGTA_P2\\AsterixDecoder\\AsterixDecoder\\obj\\",
+        "outputPath": "C:\\Users\\fedep\\source\\repos\\jthort00\\PGTA_P2\\AsterixDecoder\\AsterixDecoder\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\fedep\\AppData\\Roaming\\NuGet\\NuGet.Config",

@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "RYpcLiiTqAfohlASsFY0j2RKImW98ub1XXXDxVbWvw8bu0HCaRSvV82+acL0rPMmskHr2eqV95CCnU8ZTrxWpQ==",
+  "dgSpecHash": "sn+UiCyuHerRZrBLaaArRjBOpr08/Hd92OSgDn/aA7E7lsqh9noX/+CrSx3auxdqd5Hn2zIEHz8hFMdcHHyYsg==",
   "success": true,
-  "projectFilePath": "C:\\Users\\fedep\\Source\\Repos\\jthort00\\PGTA_P2\\AsterixDecoder\\AsterixDecoder\\AsterixDecoder.csproj",
+  "projectFilePath": "C:\\Users\\fedep\\source\\repos\\jthort00\\PGTA_P2\\AsterixDecoder\\AsterixDecoder\\AsterixDecoder.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\fedep\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\5.0.0\\microsoft.windowsdesktop.app.ref.5.0.0.nupkg.sha512",
     "C:\\Users\\fedep\\.nuget\\packages\\microsoft.netcore.app.ref\\5.0.0\\microsoft.netcore.app.ref.5.0.0.nupkg.sha512",
