@@ -2,8 +2,6 @@
 /shelf/
 /workspace.xml
 # Rider ignored files
-/modules.xml
-/.idea.PGTA_P2.iml
 /projectSettingsUpdater.xml
 /contentModel.xml
 # Editor-based HTTP Client requests
