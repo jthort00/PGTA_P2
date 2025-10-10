@@ -77,6 +77,36 @@ public class Cat021Decoder
             return records;
         }
 
+		private List<bool> ReadFSPEC()
+		{
+			var fspec = new List<bool>();
+			bool hasExtension = true;
+
+			while (hasExtension && currentByte < data.length)
+			{
+				byte octet = data[currentByte++];
+
+				for (int i = 7; i >= 1; i--)
+				{
+					fspec.Add((octet & 1 << i) != 0);
+				}
+			}
+			return fspec;
+		}
+
+		private void DecodeRecord(Cat021Record record, List<bool> fspec, int recordEnd)
+		{
+			int fspecIndex = 0;
+			
+			// FRN 1 - I021/010
+			if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(2, recordEnd))
+			{
+				int sac = data[currentByte++];
+				int sic = data[currentByte++];
+				record.DataSourceIdentifier = $"SAC:{sac} SIC:{sic}";
+			}
+		}
+
 
 
 
