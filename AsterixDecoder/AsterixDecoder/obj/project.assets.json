@@ -5,14 +5,10 @@
       "Accord/3.8.0": {
         "type": "package",
         "compile": {
-          "lib/netstandard2.0/Accord.dll": {
-            "related": ".xml"
-          }
+          "lib/netstandard2.0/Accord.dll": {}
         },
         "runtime": {
-          "lib/netstandard2.0/Accord.dll": {
-            "related": ".xml"
-          }
+          "lib/netstandard2.0/Accord.dll": {}
         },
         "build": {
           "build/Accord.targets": {}
@@ -24,46 +20,30 @@
           "Accord": "3.8.0"
         },
         "compile": {
-          "lib/netstandard2.0/Accord.Math.Core.dll": {
-            "related": ".xml"
-          },
-          "lib/netstandard2.0/Accord.Math.dll": {
-            "related": ".Core.xml;.xml"
-          }
+          "lib/netstandard2.0/Accord.Math.Core.dll": {},
+          "lib/netstandard2.0/Accord.Math.dll": {}
         },
         "runtime": {
-          "lib/netstandard2.0/Accord.Math.Core.dll": {
-            "related": ".xml"
-          },
-          "lib/netstandard2.0/Accord.Math.dll": {
-            "related": ".Core.xml;.xml"
-          }
+          "lib/netstandard2.0/Accord.Math.Core.dll": {},
+          "lib/netstandard2.0/Accord.Math.dll": {}
         }
       },
       "Microsoft.Bcl.AsyncInterfaces/5.0.0": {
         "type": "package",
         "compile": {
-          "lib/netstandard2.1/Microsoft.Bcl.AsyncInterfaces.dll": {
-            "related": ".xml"
-          }
+          "lib/netstandard2.1/Microsoft.Bcl.AsyncInterfaces.dll": {}
         },
         "runtime": {
-          "lib/netstandard2.1/Microsoft.Bcl.AsyncInterfaces.dll": {
-            "related": ".xml"
-          }
+          "lib/netstandard2.1/Microsoft.Bcl.AsyncInterfaces.dll": {}
         }
       },
       "Microsoft.Extensions.ObjectPool/5.0.10": {
         "type": "package",
         "compile": {
-          "lib/net5.0/Microsoft.Extensions.ObjectPool.dll": {
-            "related": ".xml"
-          }
+          "lib/net5.0/Microsoft.Extensions.ObjectPool.dll": {}
         },
         "runtime": {
-          "lib/net5.0/Microsoft.Extensions.ObjectPool.dll": {
-            "related": ".xml"
-          }
+          "lib/net5.0/Microsoft.Extensions.ObjectPool.dll": {}
         }
       },
       "Microsoft.NETCore.Platforms/3.1.9": {
@@ -81,14 +61,10 @@
           "Microsoft.NETCore.Platforms": "3.1.0"
         },
         "compile": {
-          "ref/netstandard2.0/_._": {
-            "related": ".xml"
-          }
+          "ref/netstandard2.0/_._": {}
         },
         "runtime": {
-          "lib/netstandard2.0/Microsoft.Win32.SystemEvents.dll": {
-            "related": ".xml"
-          }
+          "lib/netstandard2.0/Microsoft.Win32.SystemEvents.dll": {}
         },
         "runtimeTargets": {
           "runtimes/win/lib/netcoreapp3.0/Microsoft.Win32.SystemEvents.dll": {
@@ -104,14 +80,10 @@
           "System.Text.Json": "6.0.10"
         },
         "compile": {
-          "lib/netstandard2.1/Sentry.dll": {
-            "related": ".xml"
-          }
+          "lib/netstandard2.1/Sentry.dll": {}
         },
         "runtime": {
-          "lib/netstandard2.1/Sentry.dll": {
-            "related": ".xml"
-          }
+          "lib/netstandard2.1/Sentry.dll": {}
         },
         "build": {
           "buildTransitive/Sentry.targets": {}
@@ -124,14 +96,10 @@
           "System.Threading.Channels": "8.0.0"
         },
         "compile": {
-          "lib/netstandard2.0/Serilog.dll": {
-            "related": ".xml"
-          }
+          "lib/netstandard2.0/Serilog.dll": {}
         },
         "runtime": {
-          "lib/netstandard2.0/Serilog.dll": {
-            "related": ".xml"
-          }
+          "lib/netstandard2.0/Serilog.dll": {}
         },
         "build": {
           "build/_._": {}
@@ -143,14 +111,10 @@
           "Serilog": "4.0.0"
         },
         "compile": {
-          "lib/netstandard2.0/Serilog.Sinks.Debug.dll": {
-            "related": ".xml"
-          }
+          "lib/netstandard2.0/Serilog.Sinks.Debug.dll": {}
         },
         "runtime": {
-          "lib/netstandard2.0/Serilog.Sinks.Debug.dll": {
-            "related": ".xml"
-          }
+          "lib/netstandard2.0/Serilog.Sinks.Debug.dll": {}
         }
       },
       "Serilog.Sinks.File/7.0.0": {
@@ -159,14 +123,10 @@
           "Serilog": "4.2.0"
         },
         "compile": {
-          "lib/netstandard2.0/Serilog.Sinks.File.dll": {
-            "related": ".xml"
-          }
+          "lib/netstandard2.0/Serilog.Sinks.File.dll": {}
         },
         "runtime": {
-          "lib/netstandard2.0/Serilog.Sinks.File.dll": {
-            "related": ".xml"
-          }
+          "lib/netstandard2.0/Serilog.Sinks.File.dll": {}
         }
       },
       "SkiaSharp/2.88.9": {
@@ -176,14 +136,10 @@
           "SkiaSharp.NativeAssets.macOS": "2.88.9"
         },
         "compile": {
-          "lib/netcoreapp3.1/SkiaSharp.dll": {
-            "related": ".pdb;.xml"
-          }
+          "lib/netcoreapp3.1/SkiaSharp.dll": {}
         },
         "runtime": {
-          "lib/netcoreapp3.1/SkiaSharp.dll": {
-            "related": ".pdb;.xml"
-          }
+          "lib/netcoreapp3.1/SkiaSharp.dll": {}
         }
       },
       "SkiaSharp.NativeAssets.macOS/2.88.9": {
@@ -231,14 +187,10 @@
           "System.Drawing.Common": "4.7.3"
         },
         "compile": {
-          "lib/netcoreapp3.1/SkiaSharp.Views.Desktop.Common.dll": {
-            "related": ".pdb;.xml"
-          }
+          "lib/netcoreapp3.1/SkiaSharp.Views.Desktop.Common.dll": {}
         },
         "runtime": {
-          "lib/netcoreapp3.1/SkiaSharp.Views.Desktop.Common.dll": {
-            "related": ".pdb;.xml"
-          }
+          "lib/netcoreapp3.1/SkiaSharp.Views.Desktop.Common.dll": {}
         }
       },
       "System.Buffers/4.5.1": {
@@ -257,14 +209,10 @@
           "System.Runtime.CompilerServices.Unsafe": "6.0.0"
         },
         "compile": {
-          "lib/netstandard2.0/System.Diagnostics.DiagnosticSource.dll": {
-            "related": ".xml"
-          }
+          "lib/netstandard2.0/System.Diagnostics.DiagnosticSource.dll": {}
         },
         "runtime": {
-          "lib/netstandard2.0/System.Diagnostics.DiagnosticSource.dll": {
-            "related": ".xml"
-          }
+          "lib/netstandard2.0/System.Diagnostics.DiagnosticSource.dll": {}
         },
         "build": {
           "buildTransitive/netcoreapp2.0/System.Diagnostics.DiagnosticSource.targets": {}
@@ -277,9 +225,7 @@
           "Microsoft.Win32.SystemEvents": "4.7.0"
         },
         "compile": {
-          "ref/netcoreapp3.0/System.Drawing.Common.dll": {
-            "related": ".xml"
-          }
+          "ref/netcoreapp3.0/System.Drawing.Common.dll": {}
         },
         "runtime": {
           "lib/netstandard2.0/System.Drawing.Common.dll": {}
@@ -302,14 +248,10 @@
           "System.Memory": "4.5.4"
         },
         "compile": {
-          "lib/netstandard2.0/System.Formats.Asn1.dll": {
-            "related": ".xml"
-          }
+          "lib/netstandard2.0/System.Formats.Asn1.dll": {}
         },
         "runtime": {
-          "lib/netstandard2.0/System.Formats.Asn1.dll": {
-            "related": ".xml"
-          }
+          "lib/netstandard2.0/System.Formats.Asn1.dll": {}
         },
         "build": {
           "buildTransitive/netcoreapp3.1/_._": {}
@@ -347,9 +289,7 @@
           "ref/netstandard2.0/_._": {}
         },
         "runtime": {
-          "lib/netstandard2.0/System.Private.ServiceModel.dll": {
-            "related": ".pdb"
-          }
+          "lib/netstandard2.0/System.Private.ServiceModel.dll": {}
         },
         "resource": {
           "lib/netstandard2.0/cs/System.Private.ServiceModel.resources.dll": {
@@ -396,40 +336,28 @@
       "System.Reflection.DispatchProxy/4.7.1": {
         "type": "package",
         "compile": {
-          "ref/netstandard2.0/System.Reflection.DispatchProxy.dll": {
-            "related": ".xml"
-          }
+          "ref/netstandard2.0/System.Reflection.DispatchProxy.dll": {}
         },
         "runtime": {
-          "lib/netcoreapp2.0/System.Reflection.DispatchProxy.dll": {
-            "related": ".xml"
-          }
+          "lib/netcoreapp2.0/System.Reflection.DispatchProxy.dll": {}
         }
       },
       "System.Reflection.Metadata/5.0.0": {
         "type": "package",
         "compile": {
-          "lib/netstandard2.0/System.Reflection.Metadata.dll": {
-            "related": ".xml"
-          }
+          "lib/netstandard2.0/System.Reflection.Metadata.dll": {}
         },
         "runtime": {
-          "lib/netstandard2.0/System.Reflection.Metadata.dll": {
-            "related": ".xml"
-          }
+          "lib/netstandard2.0/System.Reflection.Metadata.dll": {}
         }
       },
       "System.Runtime.CompilerServices.Unsafe/6.1.2": {
         "type": "package",
         "compile": {
-          "lib/netstandard2.0/System.Runtime.CompilerServices.Unsafe.dll": {
-            "related": ".xml"
-          }
+          "lib/netstandard2.0/System.Runtime.CompilerServices.Unsafe.dll": {}
         },
         "runtime": {
-          "lib/netstandard2.0/System.Runtime.CompilerServices.Unsafe.dll": {
-            "related": ".xml"
-          }
+          "lib/netstandard2.0/System.Runtime.CompilerServices.Unsafe.dll": {}
         },
         "build": {
           "buildTransitive/netcoreapp2.0/System.Runtime.CompilerServices.Unsafe.targets": {}
@@ -441,14 +369,10 @@
           "System.Security.Principal.Windows": "5.0.0"
         },
         "compile": {
-          "lib/netstandard2.0/System.Security.AccessControl.dll": {
-            "related": ".xml"
-          }
+          "lib/netstandard2.0/System.Security.AccessControl.dll": {}
         },
         "runtime": {
-          "lib/netstandard2.0/System.Security.AccessControl.dll": {
-            "related": ".xml"
-          }
+          "lib/netstandard2.0/System.Security.AccessControl.dll": {}
         },
         "build": {
           "buildTransitive/netcoreapp3.1/_._": {}
@@ -466,14 +390,10 @@
           "System.Formats.Asn1": "5.0.0"
         },
         "compile": {
-          "ref/netcoreapp3.0/System.Security.Cryptography.Cng.dll": {
-            "related": ".xml"
-          }
+          "ref/netcoreapp3.0/System.Security.Cryptography.Cng.dll": {}
         },
         "runtime": {
-          "lib/netcoreapp3.0/System.Security.Cryptography.Cng.dll": {
-            "related": ".xml"
-          }
+          "lib/netcoreapp3.0/System.Security.Cryptography.Cng.dll": {}
         },
         "runtimeTargets": {
           "runtimes/win/lib/netcoreapp3.0/System.Security.Cryptography.Cng.dll": {
@@ -489,14 +409,10 @@
           "System.Security.Cryptography.Cng": "5.0.0"
         },
         "compile": {
-          "lib/netcoreapp3.1/System.Security.Cryptography.Pkcs.dll": {
-            "related": ".xml"
-          }
+          "lib/netcoreapp3.1/System.Security.Cryptography.Pkcs.dll": {}
         },
         "runtime": {
-          "lib/netcoreapp3.1/System.Security.Cryptography.Pkcs.dll": {
-            "related": ".xml"
-          }
+          "lib/netcoreapp3.1/System.Security.Cryptography.Pkcs.dll": {}
         },
         "build": {
           "buildTransitive/netcoreapp3.1/_._": {}
@@ -516,14 +432,10 @@
           "System.Security.Cryptography.Pkcs": "6.0.5"
         },
         "compile": {
-          "lib/netstandard2.0/System.Security.Cryptography.Xml.dll": {
-            "related": ".xml"
-          }
+          "lib/netstandard2.0/System.Security.Cryptography.Xml.dll": {}
         },
         "runtime": {
-          "lib/netstandard2.0/System.Security.Cryptography.Xml.dll": {
-            "related": ".xml"
-          }
+          "lib/netstandard2.0/System.Security.Cryptography.Xml.dll": {}
         },
         "build": {
           "buildTransitive/netcoreapp3.1/_._": {}
@@ -532,14 +444,10 @@
       "System.Security.Principal.Windows/5.0.0": {
         "type": "package",
         "compile": {
-          "ref/netcoreapp3.0/System.Security.Principal.Windows.dll": {
-            "related": ".xml"
-          }
+          "ref/netcoreapp3.0/System.Security.Principal.Windows.dll": {}
         },
         "runtime": {
-          "lib/netstandard2.0/System.Security.Principal.Windows.dll": {
-            "related": ".xml"
-          }
+          "lib/netstandard2.0/System.Security.Principal.Windows.dll": {}
         },
         "runtimeTargets": {
           "runtimes/unix/lib/netcoreapp2.1/System.Security.Principal.Windows.dll": {
@@ -562,9 +470,7 @@
           "ref/netstandard2.0/System.ServiceModel.Http.dll": {}
         },
         "runtime": {
-          "lib/netstandard2.0/System.ServiceModel.Http.dll": {
-            "related": ".pdb"
-          }
+          "lib/netstandard2.0/System.ServiceModel.Http.dll": {}
         }
       },
       "System.ServiceModel.Primitives/4.10.3": {
@@ -577,12 +483,8 @@
           "ref/netstandard2.0/System.ServiceModel.dll": {}
         },
         "runtime": {
-          "lib/netstandard2.0/System.ServiceModel.Primitives.dll": {
-            "related": ".pdb"
-          },
-          "lib/netstandard2.0/System.ServiceModel.dll": {
-            "related": ".Primitives.pdb"
-          }
+          "lib/netstandard2.0/System.ServiceModel.Primitives.dll": {},
+          "lib/netstandard2.0/System.ServiceModel.dll": {}
         }
       },
       "System.Text.Encodings.Web/6.0.0": {
@@ -591,14 +493,10 @@
           "System.Runtime.CompilerServices.Unsafe": "6.0.0"
         },
         "compile": {
-          "lib/netcoreapp3.1/System.Text.Encodings.Web.dll": {
-            "related": ".xml"
-          }
+          "lib/netcoreapp3.1/System.Text.Encodings.Web.dll": {}
         },
         "runtime": {
-          "lib/netcoreapp3.1/System.Text.Encodings.Web.dll": {
-            "related": ".xml"
-          }
+          "lib/netcoreapp3.1/System.Text.Encodings.Web.dll": {}
         },
         "build": {
           "buildTransitive/netcoreapp3.1/_._": {}
@@ -611,14 +509,10 @@
           "System.Text.Encodings.Web": "6.0.0"
         },
         "compile": {
-          "lib/netcoreapp3.1/System.Text.Json.dll": {
-            "related": ".xml"
-          }
+          "lib/netcoreapp3.1/System.Text.Json.dll": {}
         },
         "runtime": {
-          "lib/netcoreapp3.1/System.Text.Json.dll": {
-            "related": ".xml"
-          }
+          "lib/netcoreapp3.1/System.Text.Json.dll": {}
         },
         "build": {
           "buildTransitive/netcoreapp3.1/System.Text.Json.targets": {}
@@ -627,14 +521,10 @@
       "System.Threading.Channels/8.0.0": {
         "type": "package",
         "compile": {
-          "lib/netstandard2.1/System.Threading.Channels.dll": {
-            "related": ".xml"
-          }
+          "lib/netstandard2.1/System.Threading.Channels.dll": {}
         },
         "runtime": {
-          "lib/netstandard2.1/System.Threading.Channels.dll": {
-            "related": ".xml"
-          }
+          "lib/netstandard2.1/System.Threading.Channels.dll": {}
         },
         "build": {
           "buildTransitive/netcoreapp2.0/System.Threading.Channels.targets": {}
@@ -677,14 +567,10 @@
           "System.ServiceModel.Primitives": "4.10.3"
         },
         "compile": {
-          "lib/net5.0/VisioForge.Libs.External.dll": {
-            "related": ".xml"
-          }
+          "lib/net5.0/VisioForge.Libs.External.dll": {}
         },
         "runtime": {
-          "lib/net5.0/VisioForge.Libs.External.dll": {
-            "related": ".xml"
-          }
+          "lib/net5.0/VisioForge.Libs.External.dll": {}
         }
       }
     }
@@ -2069,19 +1955,19 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\fedep\\.nuget\\packages\\": {}
+    "C:\\Users\\jtort\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\fedep\\source\\repos\\jthort00\\PGTA_P2\\AsterixDecoder\\AsterixDecoder\\AsterixDecoder.csproj",
+      "projectUniqueName": "C:\\PGTA\\PGTA_P2\\AsterixDecoder\\AsterixDecoder\\AsterixDecoder.csproj",
       "projectName": "AsterixDecoder",
-      "projectPath": "C:\\Users\\fedep\\source\\repos\\jthort00\\PGTA_P2\\AsterixDecoder\\AsterixDecoder\\AsterixDecoder.csproj",
-      "packagesPath": "C:\\Users\\fedep\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\fedep\\source\\repos\\jthort00\\PGTA_P2\\AsterixDecoder\\AsterixDecoder\\obj\\",
+      "projectPath": "C:\\PGTA\\PGTA_P2\\AsterixDecoder\\AsterixDecoder\\AsterixDecoder.csproj",
+      "packagesPath": "C:\\Users\\jtort\\.nuget\\packages\\",
+      "outputPath": "C:\\PGTA\\PGTA_P2\\AsterixDecoder\\AsterixDecoder\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\fedep\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\jtort\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
       "originalTargetFrameworks": [
@@ -2130,36 +2016,25 @@
           "net47",
           "net471",
           "net472",
-          "net48",
-          "net481"
+          "net48"
         ],
         "assetTargetFallback": true,
         "warn": true,
-        "downloadDependencies": [
-          {
-            "name": "Microsoft.AspNetCore.App.Ref",
-            "version": "[5.0.0, 5.0.0]"
-          },
-          {
-            "name": "Microsoft.NETCore.App.Host.win-x64",
-            "version": "[5.0.17, 5.0.17]"
-          },
-          {
-            "name": "Microsoft.NETCore.App.Ref",
-            "version": "[5.0.0, 5.0.0]"
-          },
-          {
-            "name": "Microsoft.WindowsDesktop.App.Ref",
-            "version": "[5.0.0, 5.0.0]"
-          }
-        ],
         "frameworkReferences": {
           "Microsoft.NETCore.App": {
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.403\\RuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\5.0.416\\RuntimeIdentifierGraph.json"
       }
     }
-  }
+  },
+  "logs": [
+    {
+      "code": "Undefined",
+      "level": "Warning",
+      "warningLevel": 1,
+      "message": "Problema al leer el archivo de caché C:\\PGTA\\PGTA_P2\\AsterixDecoder\\AsterixDecoder\\obj\\project.nuget.cache : Invalid property identifier character: <. Path 'version', line 3, position 0."
+    }
+  ]
 }

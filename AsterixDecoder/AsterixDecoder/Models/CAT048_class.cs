@@ -15,75 +15,35 @@ namespace AsterixDecoder.Models
         public class Cat048Record
         {
             // FRN 1 - I048/010
-            public string DataSourceIdentifier { get; set; }
-
+            public string DataSourceIdentifier { get; set; } 
             // FRN 2 - I048/140
             public TimeSpan? TimeOfDay { get; set; }
-
             // FRN 3 - I048/020
             public string TargetReportDescriptor { get; set; }
-
             // FRN 4 - I048/040
             public double RhoSlantRange { get; set; } // NM
             public double ThetaAzimuth { get; set; } // degrees
-
             // FRN 5 - I048/070
             public string Mode3ACode { get; set; }
-
             // FRN 6 - I048/090
             public int FlightLevel { get; set; } // quarters of FL
-
             // FRN 7 - I048/130
             public string RadarPlotCharacteristics { get; set; }
-
             // FRN 8 - I048/220
             public string AircraftAddress { get; set; }
-
             // FRN 9 - I048/240
             public string AircraftIdentification { get; set; }
-
             // FRN 10 - I048/250
             public ModeSMBData ModeSData { get; set; }
-
             // FRN 11 - I048/161
             public int TrackNumber { get; set; }
-
             // FRN 13 - I048/200
             public double GroundSpeedKnots { get; set; }
             public double HeadingDegrees { get; set; }
-
             // FRN 14 - I048/170
             public string TrackStatus { get; set; }
-
-            // FRN 15 - I048/210
-            public int TrackQuality { get; set; }
-
-            // FRN 16 - I048/030
-            public string WarningErrorConditions { get; set; }
-
-            // FRN 17 - I048/080
-            public string Mode3AConfidence { get; set; }
-
-            // FRN 18 - I048/100
-            public string ModeCConfidence { get; set; }
-
-            // FRN 19 - I048/110
-            public double Height3DRadar { get; set; } // feet
-
-            // FRN 20 - I048/120
-            public double RadialDopplerSpeed { get; set; } // m/s
-
             // FRN 21 - I048/230
             public string CommunicationsACASCapability { get; set; }
-
-            // FRN 22 - I048/260
-            public string ACASResolutionAdvisory { get; set; }
-
-            // FRN 27 - SP-Data
-            public byte[] SpecialPurposeField { get; set; }
-
-            // FRN 28 - RE-Data
-            public byte[] ReservedExpansionField { get; set; }
         }
 
         public class ModeSMBData
@@ -126,33 +86,23 @@ namespace AsterixDecoder.Models
         {
             var records = new List<Cat048Record>();
 
-            while (currentByte < data.Length)
-            {
-                // Leer CAT (1 byte)
-                if (currentByte >= data.Length) break;
-                byte cat = data[currentByte++];
-                if (cat != 48) continue;
+            // Comprovem categoria
+            if (data.Length < 3) return records; // massa curt, no valid
+            byte cat = data[0];
+            if (cat != 48) return records;       // no és CAT048 → ignorem
 
-                // Leer longitud (2 bytes)
-                if (currentByte + 1 >= data.Length) break;
-                int length = data[currentByte] << 8 | data[currentByte + 1];
-                currentByte += 2;
+            int length = (data[1] << 8) | data[2];
+            if (length != data.Length) return records; // no valid
 
-                int recordEnd = currentByte + length - 3;
+            currentByte = 3; // saltem categoria + longitud
 
-                // Validar que no excedamos el buffer
-                if (recordEnd > data.Length) break;
+            // Llegim FSPEC
+            var fspec = ReadFSPEC();
 
-                // Leer FSPEC
-                var fspec = ReadFSPEC();
-
-                // Decodificar record
-                var record = new Cat048Record();
-                DecodeRecord(record, fspec, recordEnd);
-                records.Add(record);
-
-                currentByte = recordEnd;
-            }
+            // Decodifiquem el record
+            var record = new Cat048Record();
+            DecodeRecord(record, fspec, data.Length);
+            records.Add(record);
 
             return records;
         }
@@ -252,27 +202,40 @@ namespace AsterixDecoder.Models
                 int fl = (data[currentByte] & 0x3F) << 8 | data[currentByte + 1];
                 currentByte += 2;
                 if ((fl & 0x2000) != 0) fl |= unchecked((int)0xFFFFC000);
-                record.FlightLevel = fl;
+                record.FlightLevel = fl/4; // Corregit. FL es guarda en quarts de FL
             }
 
             // FRN 7 - I048/130 - Radar Plot Characteristics
             if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(1, recordEnd))
             {
-                byte firstOctet = data[currentByte++];
+                bool hasExtension;
                 StringBuilder rpc = new StringBuilder();
 
-                while ((firstOctet & 0x01) != 0 && CheckBytes(1, recordEnd))
+                do
                 {
-                    firstOctet = data[currentByte++];
-                }
+                    byte primary = data[currentByte++];
+                    rpc.AppendFormat("{0:X2} ", primary);
 
-                record.RadarPlotCharacteristics = rpc.ToString();
-            }
+                    // Bits 8..2 indiquen presència de subcamps
+                    for (int bit = 7; bit >= 1; bit--)
+                    {
+                        if (((primary >> bit) & 0x01) == 1)
+                        {
+                            // Subcamp present → llegim/saltem 1 byte
+                            if (CheckBytes(1, recordEnd))
+                            {
+                                byte subfield = data[currentByte++];
+                                rpc.AppendFormat("{0:X2} ", subfield);
+                            }
+                        }
+                    }
 
-            // FX - Skip if present
-            if (fspecIndex < fspec.Count && fspec[fspecIndex++])
-            {
-                // Segundo octeto del FSPEC
+                    // Bit 1 (LSB) = FX → indica si hi ha un altre Primary Subfield
+                    hasExtension = (primary & 0x01) != 0;
+
+                } while (hasExtension && CheckBytes(1, recordEnd));
+
+                record.RadarPlotCharacteristics = rpc.ToString().Trim();
             }
 
             // FRN 8 - I048/220 - Aircraft Address
@@ -283,18 +246,36 @@ namespace AsterixDecoder.Models
                 record.AircraftAddress = addr.ToString("X6");
             }
 
-            // FRN 9 - I048/240 - Aircraft Identification
+            // FRN 9 - I048/240 - Aircraft Identification (fix: 6 bytes IA-5 packed)
             if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(6, recordEnd))
             {
-                StringBuilder callsign = new StringBuilder();
-                for (int i = 0; i < 6; i++)
+                // Llegeix els 6 bytes empaquetats
+                Span<byte> b = stackalloc byte[6];
+                for (int i = 0; i < 6; i++) b[i] = data[currentByte++];
+
+                // Extreu 8 valors de 6 bits
+                int[] sixBits = new int[8];
+                sixBits[0] = (b[0] >> 2) & 0x3F;
+                sixBits[1] = ((b[0] & 0x03) << 4 | (b[1] >> 4)) & 0x3F;
+                sixBits[2] = ((b[1] & 0x0F) << 2 | (b[2] >> 6)) & 0x3F;
+                sixBits[3] = b[2] & 0x3F;
+                sixBits[4] = (b[3] >> 2) & 0x3F;
+                sixBits[5] = ((b[3] & 0x03) << 4 | (b[4] >> 4)) & 0x3F;
+                sixBits[6] = ((b[4] & 0x0F) << 2 | (b[5] >> 6)) & 0x3F;
+                sixBits[7] = b[5] & 0x3F;
+
+                // Converteix cada valor IA-5 a caràcter
+                var sb = new StringBuilder(8);
+                for (int i = 0; i < 8; i++)
                 {
-                    byte b = data[currentByte++];
-                    char c = DecodeIA5Character(b);
-                    if (c != ' ') callsign.Append(c);
+                    char c = DecodeIA5Character((byte)sixBits[i]);
+                    sb.Append(c);
                 }
-                record.AircraftIdentification = callsign.ToString().Trim();
+
+                record.AircraftIdentification = sb.ToString().Trim();
             }
+
+
 
             // FRN 10 - I048/250 - Mode S MB Data
             if (fspecIndex < fspec.Count && fspec[fspecIndex++])
@@ -336,19 +317,26 @@ namespace AsterixDecoder.Models
             }
 
             // FRN 14 - I048/170 - Track Status
+            // FRN 14 - I048/170 - Track Status
             if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(1, recordEnd))
             {
-                byte octet = data[currentByte++];
-                bool hasExtension = (octet & 0x01) != 0;
-                while (hasExtension && CheckBytes(1, recordEnd))
+                bool hasExtension;
+                StringBuilder trackStatus = new StringBuilder();
+
+                do
                 {
-                    octet = data[currentByte++];
-                    hasExtension = (octet & 0x01) != 0;
+                    byte octet = data[currentByte++];
+                    trackStatus.AppendFormat("{0:X2} ", octet);  // Guardem el byte en format hex
+                    hasExtension = (octet & 0x01) != 0;          // Bit FX = 1 → hi ha més octets
                 }
+                while (hasExtension && CheckBytes(1, recordEnd));
+
+                record.TrackStatus = trackStatus.ToString().Trim();
             }
 
             // Continuar con el resto de los campos según FSPEC...
             DecodeRemainingFields(record, fspec, ref fspecIndex, recordEnd);
+
         }
 
         private bool CheckBytes(int needed, int recordEnd)
@@ -400,16 +388,20 @@ namespace AsterixDecoder.Models
                 currentByte += 2;
             }
 
-            // FX
-            if (fspecIndex < fspec.Count && fspec[fspecIndex++])
+            // FRN 21 - I048/230 - Communications/ACAS Capability
+            if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(1, recordEnd))
             {
-                // Tercer octeto FSPEC
-            }
+                StringBuilder commAcas = new StringBuilder();
+                bool hasExtension = true;
 
-            // FRN 21 - I048/230 - Communications/ACAS
-            if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(2, recordEnd))
-            {
-                currentByte += 2;
+                while (hasExtension && CheckBytes(1, recordEnd))
+                {
+                    byte octet = data[currentByte++];
+                    hasExtension = (octet & 0x01) != 0;
+                    commAcas.Append(Convert.ToString(octet >> 1 & 0x7F, 2).PadLeft(7, '0'));
+                }
+
+                record.CommunicationsACASCapability = commAcas.ToString();
             }
 
             // FRN 22 - I048/260 - ACAS Resolution Advisory
@@ -442,29 +434,6 @@ namespace AsterixDecoder.Models
                 // Cuarto octeto FSPEC
             }
 
-            // FRN 27 - SP Special Purpose
-            if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(1, recordEnd))
-            {
-                byte len = data[currentByte++];
-                if (CheckBytes(len, recordEnd))
-                {
-                    record.SpecialPurposeField = new byte[len];
-                    Array.Copy(data, currentByte, record.SpecialPurposeField, 0, len);
-                    currentByte += len;
-                }
-            }
-
-            // FRN 28 - RE Reserved Expansion
-            if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(1, recordEnd))
-            {
-                byte len = data[currentByte++];
-                if (CheckBytes(len, recordEnd))
-                {
-                    record.ReservedExpansionField = new byte[len];
-                    Array.Copy(data, currentByte, record.ReservedExpansionField, 0, len);
-                    currentByte += len;
-                }
-            }
         }
 
         private ModeSMBData DecodeModeSMBData(int recordEnd)
@@ -553,10 +522,16 @@ namespace AsterixDecoder.Models
 
         private char DecodeIA5Character(byte b)
         {
-            b &= 0x3F;
-            if (b == 32) return ' ';
+            b &= 0x3F; // només 6 bits
+
+            if (b == 0) return '@';       // segons taula
             if (b >= 1 && b <= 26) return (char)('A' + b - 1);
-            if (b >= 48 && b <= 57) return (char)b;
+            if (b == 32) return ' ';      // espai
+            if (b >= 48 && b <= 57) return (char)('0' + (b - 48)); // <-- això mai no es complirà
+
+            // Versió correcta per als dígits:
+            if (b >= 32 && b <= 41) return (char)('0' + (b - 32));
+
             return ' ';
         }
     }
