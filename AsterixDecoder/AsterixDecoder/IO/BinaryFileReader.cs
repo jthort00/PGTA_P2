@@ -46,7 +46,7 @@ namespace AsterixDecoder.IO
 
                         messages.Add(message);
 
-                        //Console.WriteLine($"Missatge → Categoria: {category}, Longitud: {length}");
+                        // Console.WriteLine($"Missatge → Categoria: {category}, Longitud: {length}");
 
                     }
 
