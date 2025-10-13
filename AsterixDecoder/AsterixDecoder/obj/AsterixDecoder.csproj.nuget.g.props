@@ -5,18 +5,15 @@
     <RestoreTool Condition=" '$(RestoreTool)' == '' ">NuGet</RestoreTool>
     <ProjectAssetsFile Condition=" '$(ProjectAssetsFile)' == '' ">$(MSBuildThisFileDirectory)project.assets.json</ProjectAssetsFile>
     <NuGetPackageRoot Condition=" '$(NuGetPackageRoot)' == '' ">$(UserProfile)\.nuget\packages\</NuGetPackageRoot>
-    <NuGetPackageFolders Condition=" '$(NuGetPackageFolders)' == '' ">C:\Users\jtort\.nuget\packages\</NuGetPackageFolders>
+    <NuGetPackageFolders Condition=" '$(NuGetPackageFolders)' == '' ">C:\Users\fedep\.nuget\packages\</NuGetPackageFolders>
     <NuGetProjectStyle Condition=" '$(NuGetProjectStyle)' == '' ">PackageReference</NuGetProjectStyle>
-    <NuGetToolVersion Condition=" '$(NuGetToolVersion)' == '' ">5.11.6</NuGetToolVersion>
+    <NuGetToolVersion Condition=" '$(NuGetToolVersion)' == '' ">6.7.0</NuGetToolVersion>
   </PropertyGroup>
   <ItemGroup Condition=" '$(ExcludeRestorePackageImports)' != 'true' ">
-    <SourceRoot Include="C:\Users\jtort\.nuget\packages\" />
+    <SourceRoot Include="C:\Users\fedep\.nuget\packages\" />
   </ItemGroup>
-  <PropertyGroup>
-    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
-  </PropertyGroup>
   <PropertyGroup Condition=" '$(ExcludeRestorePackageImports)' != 'true' ">
-    <PkgSentry Condition=" '$(PkgSentry)' == '' ">C:\Users\jtort\.nuget\packages\sentry\4.13.0</PkgSentry>
-    <PkgVisioForge_DotNet_Core Condition=" '$(PkgVisioForge_DotNet_Core)' == '' ">C:\Users\jtort\.nuget\packages\visioforge.dotnet.core\2025.10.1</PkgVisioForge_DotNet_Core>
+    <PkgSentry Condition=" '$(PkgSentry)' == '' ">C:\Users\fedep\.nuget\packages\sentry\4.13.0</PkgSentry>
+    <PkgVisioForge_DotNet_Core Condition=" '$(PkgVisioForge_DotNet_Core)' == '' ">C:\Users\fedep\.nuget\packages\visioforge.dotnet.core\2025.10.1</PkgVisioForge_DotNet_Core>
   </PropertyGroup>
 </Project>
