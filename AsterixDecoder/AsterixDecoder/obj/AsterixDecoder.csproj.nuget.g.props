@@ -4,19 +4,16 @@
     <RestoreSuccess Condition=" '$(RestoreSuccess)' == '' ">True</RestoreSuccess>
     <RestoreTool Condition=" '$(RestoreTool)' == '' ">NuGet</RestoreTool>
     <ProjectAssetsFile Condition=" '$(ProjectAssetsFile)' == '' ">$(MSBuildThisFileDirectory)project.assets.json</ProjectAssetsFile>
-    <NuGetPackageRoot Condition=" '$(NuGetPackageRoot)' == '' ">$(UserProfile)\.nuget\packages\</NuGetPackageRoot>
-    <NuGetPackageFolders Condition=" '$(NuGetPackageFolders)' == '' ">C:\Users\jtort\.nuget\packages\</NuGetPackageFolders>
+    <NuGetPackageRoot Condition=" '$(NuGetPackageRoot)' == '' ">/Users/marcrodulfo/.nuget/packages/</NuGetPackageRoot>
+    <NuGetPackageFolders Condition=" '$(NuGetPackageFolders)' == '' ">/Users/marcrodulfo/.nuget/packages/</NuGetPackageFolders>
     <NuGetProjectStyle Condition=" '$(NuGetProjectStyle)' == '' ">PackageReference</NuGetProjectStyle>
-    <NuGetToolVersion Condition=" '$(NuGetToolVersion)' == '' ">5.11.6</NuGetToolVersion>
+    <NuGetToolVersion Condition=" '$(NuGetToolVersion)' == '' ">6.14.0</NuGetToolVersion>
   </PropertyGroup>
   <ItemGroup Condition=" '$(ExcludeRestorePackageImports)' != 'true' ">
-    <SourceRoot Include="C:\Users\jtort\.nuget\packages\" />
+    <SourceRoot Include="/Users/marcrodulfo/.nuget/packages/" />
   </ItemGroup>
-  <PropertyGroup>
-    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
-  </PropertyGroup>
   <PropertyGroup Condition=" '$(ExcludeRestorePackageImports)' != 'true' ">
-    <PkgSentry Condition=" '$(PkgSentry)' == '' ">C:\Users\jtort\.nuget\packages\sentry\4.13.0</PkgSentry>
-    <PkgVisioForge_DotNet_Core Condition=" '$(PkgVisioForge_DotNet_Core)' == '' ">C:\Users\jtort\.nuget\packages\visioforge.dotnet.core\2025.10.1</PkgVisioForge_DotNet_Core>
+    <PkgSentry Condition=" '$(PkgSentry)' == '' ">/Users/marcrodulfo/.nuget/packages/sentry/4.13.0</PkgSentry>
+    <PkgVisioForge_DotNet_Core Condition=" '$(PkgVisioForge_DotNet_Core)' == '' ">/Users/marcrodulfo/.nuget/packages/visioforge.dotnet.core/2025.10.1</PkgVisioForge_DotNet_Core>
   </PropertyGroup>
 </Project>

@@ -1,8 +1,8 @@
 {
   "runtimeOptions": {
     "additionalProbingPaths": [
-      "C:\\Users\\jtort\\.dotnet\\store\\|arch|\\|tfm|",
-      "C:\\Users\\jtort\\.nuget\\packages"
+      "/Users/marcrodulfo/.dotnet/store/|arch|/|tfm|",
+      "/Users/marcrodulfo/.nuget/packages"
     ]
   }
 }
