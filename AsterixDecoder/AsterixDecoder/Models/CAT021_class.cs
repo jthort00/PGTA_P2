@@ -90,12 +90,12 @@ namespace AsterixDecoder.Models
 
                 //Applying CAT021 filter and corrections
                 // Filter: Only airborne & within Barcelona FIR
-                //  if (record.IsOnGround)
-	               // continue;
+                  if (record.IsOnGround) 
+	                  continue;
                 //
-                // if (!(record.WGS84_Latitude > 40.9 && record.WGS84_Latitude < 41.7 &&
-                //       record.WGS84_Longitude > 1.5 && record.WGS84_Longitude < 2.6))
-	               //   continue;
+                if (!(record.WGS84_Latitude > 40.9 && record.WGS84_Latitude < 41.7 &&
+                       record.WGS84_Longitude > 1.5 && record.WGS84_Longitude < 2.6))
+	                  continue;
                 
                 // Altitude correction using QNH
                 if (record.Flight_Level > 0)
@@ -317,21 +317,15 @@ namespace AsterixDecoder.Models
 		    // FRN 21 - I021/145 Flight Level
 		    if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(2, recordEnd))
 		    {
-			    Console.WriteLine($"FRN21 raw bytes @ {currentByte}: {data[currentByte]:X2} {data[currentByte+1]:X2}");
-
-			    // Use unsigned 16-bit to avoid sign-extension surprises
-			    ushort flRaw = (ushort)((data[currentByte] << 8) | data[currentByte + 1]);
-			    // Stored value is in 25 ft units → raw / 4 = flight level (FL)
-			    int flightLevel = flRaw / 4;
-			    record.Flight_Level = flightLevel;
-
-			    // Optionally compute Real_Altitude_ft here if you want
-			    record.Real_Altitude_ft = flightLevel * 100; // FL → hundreds of feet (matching your existing logic)
-
-			    currentByte += 2;
-
-			    Console.WriteLine($"FRN21 decoded: raw={flRaw}, FlightLevel={record.Flight_Level}, Alt_ft={record.Real_Altitude_ft:F1}");
+			    byte msb = data[currentByte++];
+			    byte lsbFL = data[currentByte++];
+			    int rawFL = ((msb & 0x7F) << 8) | lsbFL;
+			    record.Flight_Level = rawFL/4; // FL in 25 ft steps
+			    record.Real_Altitude_ft = record.Flight_Level * 100; // convert to feet
+			    Console.WriteLine($"FRN21 raw bytes @ {currentByte - 2}: {msb:X2} {lsbFL:X2}");
+			    Console.WriteLine($"FRN21 decoded: raw={rawFL}, FlightLevel={record.Flight_Level}, Alt_ft={record.Real_Altitude_ft}");
 		    }
+		   
 
             
             // FRN 22 - I021/152 - Magnetic Heading (no need to decode)
@@ -380,6 +374,7 @@ namespace AsterixDecoder.Models
             if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(6, recordEnd))
             {
                 record.Target_Identification = DecodeTargetIdentification(currentByte);
+                Console.WriteLine($"FRN29 raw bytes @ {currentByte}: {BitConverter.ToString(data, currentByte, 6)} -> ID='{record.Target_Identification}'");
                 currentByte += 6;
             }
             
@@ -472,33 +467,42 @@ namespace AsterixDecoder.Models
             }
         }
 
-		private string DecodeTargetIdentification(int start)
-		{
-			const string charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ#####_###############0123456789######";
-			var chars = new StringBuilder();
+        private string DecodeTargetIdentification(int start)
+        {
+	        // IA-5 mapping for 6-bit values (per ASTERIX IA-5)
+	        // index: 0 = space or '@' depending on implementation — here we treat 0 as space
+	        char[] ia5 = new char[64];
+	        // Fill IA-5 mapping (0..63)
+	        // positions 1..26 -> A..Z (1..26)
+	        ia5[0] = ' ';
+	        for (int i = 1; i <= 26; i++) ia5[i] = (char)('A' + i - 1);
+	        // positions 32..41 -> digits 0..9 (per common IA-5 mapping)
+	        for (int i = 0; i <= 9; i++) ia5[32 + i] = (char)('0' + i);
+	        // fill rest with space to be safe
+	        for (int i = 27; i < 32; i++) ia5[i] = ' ';
+	        for (int i = 42; i < 64; i++) ia5[i] = ' ';
 
-			StringBuilder sb = new StringBuilder();
-			long bitString = ((long)data[start] << 40) |
-			                 ((long)data[start + 1] << 32) |
-			                 ((long)data[start + 2] << 24) |
-			                 ((long)data[start + 3] << 16) |
-			                 ((long)data[start + 4] << 8) |
-			                 (long)data[start + 5];
+	        // Read 6 bytes and build 48-bit stream
+	        ulong bitString = ((ulong)data[start] << 40) |
+	                          ((ulong)data[start + 1] << 32) |
+	                          ((ulong)data[start + 2] << 24) |
+	                          ((ulong)data[start + 3] << 16) |
+	                          ((ulong)data[start + 4] << 8) |
+	                          ((ulong)data[start + 5]);
 
-			const string charSetStandard = " ABCDEFGHIJKLMNOPQRSTUVWXYZ      0123456789      "; // 64 chars
+	        var sb = new StringBuilder(8);
+	        // Extract eight 6-bit values, left-to-right
+	        for (int i = 7; i >= 0; i--)
+	        {
+		        int charIndex = (int)((bitString >> (i * 6)) & 0x3F);
+		        char c = ia5[charIndex];
+		        sb.Append(c);
+	        }
 
-			for (int i = 7; i >= 0; i--) // 8 characters, from left to right
-			{
-				int charIndex = (int)((bitString >> (i * 6)) & 0x3F); // 0x3F = 00111111
-				if (charIndex < charSetStandard.Length)
-				{
-					sb.Append(charSetStandard[charIndex]);
-				}
-			}
+	        // Trim trailing/leading spaces
+	        return sb.ToString().Trim();
+        }
 
-			return sb.ToString().Trim();
-
-		}
 
 		public static void WriteCsv(string filePath, List<Cat021Record> records)
 		{
