@@ -86,7 +86,7 @@ namespace AsterixDecoder.Models
 
                 
                 //Console.WriteLine($"IsOnGround={record.IsOnGround}");
-                Console.WriteLine($"Lat={record.WGS84_Latitude:F5}, Lon={record.WGS84_Longitude:F5}, OnGround={record.IsOnGround}");
+                //Console.WriteLine($"Lat={record.WGS84_Latitude:F5}, Lon={record.WGS84_Longitude:F5}, OnGround={record.IsOnGround}");
 
                 //Applying CAT021 filter and corrections
                 // Filter: Only airborne & within Barcelona FIR
@@ -143,13 +143,13 @@ namespace AsterixDecoder.Models
 		{
 		    int fspecIndex = 0;
 
-		    Console.WriteLine("\n================ FIRST RECORD DEBUG =================");
-		    Console.WriteLine($"FSPEC bits ({fspec.Count}): {string.Join("", fspec.Select(b => b ? "1" : "0"))}");
-		    for (int i = 0; i < Math.Min(fspec.Count, 10); i++)
-		        Console.WriteLine($"Bit {i+1,2}: FRN{i+1,2} = {(fspec[i] ? 1 : 0)}");
-		    Console.WriteLine($"Record starts at byte offset {currentByte}");
-		    Console.WriteLine($"RecordEnd={recordEnd}");
-		    Console.WriteLine("----------------------------------------------------");
+		    // Console.WriteLine("\n================ FIRST RECORD DEBUG =================");
+		    // Console.WriteLine($"FSPEC bits ({fspec.Count}): {string.Join("", fspec.Select(b => b ? "1" : "0"))}");
+		    // for (int i = 0; i < Math.Min(fspec.Count, 10); i++)
+		    //     Console.WriteLine($"Bit {i+1,2}: FRN{i+1,2} = {(fspec[i] ? 1 : 0)}");
+		    // Console.WriteLine($"Record starts at byte offset {currentByte}");
+		    // Console.WriteLine($"RecordEnd={recordEnd}");
+		    // Console.WriteLine("----------------------------------------------------");
 
 		    // FRN 1 - I021/010 Data Source Identifier
 		    if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(2, recordEnd))
@@ -157,7 +157,7 @@ namespace AsterixDecoder.Models
 		        int sac = data[currentByte++];
 		        int sic = data[currentByte++];
 		        record.DataSourceIdentifier = $"SAC:{sac} SIC:{sic}";
-		        Console.WriteLine($"After FRN FRN1: currentByte={currentByte}");
+		        //Console.WriteLine($"After FRN FRN1: currentByte={currentByte}");
 		    }
 
 		    // FRN 2 - I021/040 Target Report Descriptor
@@ -183,28 +183,28 @@ namespace AsterixDecoder.Models
 		    if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(2, recordEnd))
 		    {
 		        currentByte += 2;
-		        Console.WriteLine($"After FRN FRN3: currentByte={currentByte}");
+		        //Console.WriteLine($"After FRN FRN3: currentByte={currentByte}");
 		    }
 
 		    // FRN 4 - I021/015 Service Identification
 		    if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(1, recordEnd))
 		    {
 		        currentByte += 1;
-		        Console.WriteLine($"After FRN FRN4: currentByte={currentByte}");
+		        //Console.WriteLine($"After FRN FRN4: currentByte={currentByte}");
 		    }
 
 		    // FRN 5 - I021/071 Time Applicability Position
 		    if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(3, recordEnd))
 		    {
 		        currentByte += 3;
-		        Console.WriteLine($"After FRN FRN5: currentByte={currentByte}");
+		        //Console.WriteLine($"After FRN FRN5: currentByte={currentByte}");
 		    }
 
 		    // FRN 6 - I021/130 Position WGS84 (low-res)
 		    if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(6, recordEnd))
 		    {
 		        currentByte += 6;
-		        Console.WriteLine($"After FRN FRN6: currentByte={currentByte}");
+		        //Console.WriteLine($"After FRN FRN6: currentByte={currentByte}");
 		    }
 
 		    // FRN 7 – I021/131 – High-Resolution Position in WGS-84 Coordinates
@@ -226,12 +226,15 @@ namespace AsterixDecoder.Models
 			    record.WGS84_Latitude  = rawLat * lsb;
 			    record.WGS84_Longitude = rawLon * lsb;
 
-			    Console.WriteLine($"FRN7 decoded: Lat={record.WGS84_Latitude:F6}, Lon={record.WGS84_Longitude:F6}");
+			    //Console.WriteLine($"FRN7 decoded: Lat={record.WGS84_Latitude:F6}, Lon={record.WGS84_Longitude:F6}");
 		    }
 
 		    // FRN 8 - I021/072 Time Applicability Velocity
 		    if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(3, recordEnd))
 		    {
+			    Console.WriteLine($"[DEBUG] Entering FRN8 decode at offset={currentByte:X}, next 6 bytes = " +
+			                      $"{BitConverter.ToString(data, currentByte, 6)}");
+
 		        currentByte += 3;
 		    }
 
@@ -252,7 +255,7 @@ namespace AsterixDecoder.Models
 		    {
 		        record.Target_Address = BitConverter.ToString(data, currentByte, 3).Replace("-", "");
 		        currentByte += 3;
-		        Console.WriteLine($"Target_Address:{record.Target_Address}");
+		        //Console.WriteLine($"Target_Address:{record.Target_Address}");
 		    }
 
 		    // FRN 12 - I021/073 Time of Reception of Position
@@ -261,7 +264,7 @@ namespace AsterixDecoder.Models
 		        int timeRaw = (data[currentByte] << 16) | (data[currentByte + 1] << 8) | data[currentByte + 2];
 		        record.Time_Reception_Position = TimeSpan.FromSeconds(timeRaw / 128.0);
 		        currentByte += 3;
-		        Console.WriteLine($"Time_Reception_Position:{record.Time_Reception_Position}");
+		        //Console.WriteLine($"Time_Reception_Position:{record.Time_Reception_Position}");
 		    }
 
 		    // FRN 13 - I021/074 Time of Message Reception Position
@@ -314,70 +317,76 @@ namespace AsterixDecoder.Models
 		        currentByte += 2;
 		    }
 
-		    // FRN 21 - I021/145 Flight Level
+		    // FRN 21 – I021/090 – Flight Level (2 bytes, 25 ft increments)
 		    if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(2, recordEnd))
 		    {
 			    byte msb = data[currentByte++];
-			    byte lsbFL = data[currentByte++];
-			    int rawFL = ((msb & 0x7F) << 8) | lsbFL;
-			    record.Flight_Level = rawFL/4; // FL in 25 ft steps
-			    record.Real_Altitude_ft = record.Flight_Level * 100; // convert to feet
-			    Console.WriteLine($"FRN21 raw bytes @ {currentByte - 2}: {msb:X2} {lsbFL:X2}");
-			    Console.WriteLine($"FRN21 decoded: raw={rawFL}, FlightLevel={record.Flight_Level}, Alt_ft={record.Real_Altitude_ft}");
-		    }
-		   
+			    byte lsb = data[currentByte++];
 
-            
-            // FRN 22 - I021/152 - Magnetic Heading (no need to decode)
+			    int raw = ((msb & 0x7F) << 8) | lsb; // strip status bit
+			    record.Flight_Level = raw / 4;       // 25 ft increments
+			    record.Real_Altitude_ft = record.Flight_Level * 100.0;
+		    }
+
+			// FRN 22 – I021/152 – Magnetic Heading
 			if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(2, recordEnd))
 			{
-				currentByte += 2; // Skip Magnetic heading
+				currentByte += 2;
 			}
-			
-			// FRN 23 - I021/200 - Target Status (no need to decode)
+
+			// FRN 23 – I021/200 – Target Status
 			if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(1, recordEnd))
 			{
-				currentByte += 1; // Skip Target Status
+				currentByte += 1;
 			}
-			
-			// FRN 24 - I021/155 - Barometric VR (no need to decode)
+
+			// FRN 24 – I021/155 – Barometric Vertical Rate
 			if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(2, recordEnd))
 			{
-				currentByte += 2; // Skip Barometric VR
+				currentByte += 2;
 			}
-			
-			// FRN 25 - I021/157 - Geometric VR (no need to decode)
+
+			// FRN 25 – I021/157 – Geometric Vertical Rate
 			if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(2, recordEnd))
 			{
-				currentByte += 2; // Skip Geometric VR
+				currentByte += 2;
 			}
-			
-			// FRN 26 - I021/160 - Airborne Ground Vector (no need to decode)
+
+			// FRN 26 – I021/160 – Airborne Ground Vector
 			if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(4, recordEnd))
 			{
-				currentByte += 4; // Skip Airborne Ground Vector
-			}	
-			
-			// FRN 27 - I021/165 - Track Angle Rate (no need to decode)
+				currentByte += 4;
+			}
+
+			// FRN 27 – I021/165 – Track Angle Rate
 			if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(2, recordEnd))
 			{
-				currentByte += 2; // Skip Track Angle Rate
+				currentByte += 2;
 			}
-			
-			// FRN 28 - I021/166 - Time Of Report Transmission (no need to decode)
+
+			// FRN 28 – I021/166 – Time of Report Transmission
 			if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(3, recordEnd))
 			{
-				currentByte += 3; // Skip Time Of Report Transmission
+				currentByte += 3;
 			}
-            
-            // FRN 29 - I021/170 - Target Identification
-            if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(6, recordEnd))
-            {
-                record.Target_Identification = DecodeTargetIdentification(currentByte);
-                Console.WriteLine($"FRN29 raw bytes @ {currentByte}: {BitConverter.ToString(data, currentByte, 6)} -> ID='{record.Target_Identification}'");
-                currentByte += 6;
-            }
-            
+
+			// FRN 29 – I021/170 – Target Identification (6 bytes, 8 IA-5 characters)
+			if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(6, recordEnd))
+			{
+				Console.WriteLine($"[CHECK] Byte {currentByte:X}: next 6 bytes = {BitConverter.ToString(data, currentByte, 6)}");
+
+				// Basic plausibility check:
+				// First byte typically has high bits set (>=0x20)
+				// Sixth byte often <0x80 because IA-5 bits end at 0x3F
+				//if (data[currentByte] < 0x10 || data[currentByte] > 0x7F)
+					//Console.WriteLine($"⚠️ Suspicious FRN29 start @ {currentByte:X}: byte[0]={data[currentByte]:X2}");
+
+				record.Target_Identification = DecodeTargetIdentification(currentByte);
+				//Console.WriteLine($"→ Decoded FRN29 = '{record.Target_Identification}'");
+
+				currentByte += 6;
+			}
+
             // FRN 30 - I021/020 - Emitter Category (no need to decode)
             if(fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(1, recordEnd))
 			{
@@ -469,39 +478,33 @@ namespace AsterixDecoder.Models
 
         private string DecodeTargetIdentification(int start)
         {
-	        // IA-5 mapping for 6-bit values (per ASTERIX IA-5)
-	        // index: 0 = space or '@' depending on implementation — here we treat 0 as space
+	        // IA-5 character mapping for ASTERIX (Table 3-9)
 	        char[] ia5 = new char[64];
-	        // Fill IA-5 mapping (0..63)
-	        // positions 1..26 -> A..Z (1..26)
-	        ia5[0] = ' ';
-	        for (int i = 1; i <= 26; i++) ia5[i] = (char)('A' + i - 1);
-	        // positions 32..41 -> digits 0..9 (per common IA-5 mapping)
-	        for (int i = 0; i <= 9; i++) ia5[32 + i] = (char)('0' + i);
-	        // fill rest with space to be safe
-	        for (int i = 27; i < 32; i++) ia5[i] = ' ';
-	        for (int i = 42; i < 64; i++) ia5[i] = ' ';
+	        for (int i = 0; i < 64; i++) ia5[i] = ' ';
+	        for (int i = 1; i <= 26; i++) ia5[i] = (char)('A' + i - 1); // A-Z
+	        for (int i = 32; i <= 41; i++) ia5[i] = (char)('0' + (i - 32)); // 0-9
 
-	        // Read 6 bytes and build 48-bit stream
-	        ulong bitString = ((ulong)data[start] << 40) |
-	                          ((ulong)data[start + 1] << 32) |
-	                          ((ulong)data[start + 2] << 24) |
-	                          ((ulong)data[start + 3] << 16) |
-	                          ((ulong)data[start + 4] << 8) |
-	                          ((ulong)data[start + 5]);
+	        // Combine six bytes into a 48-bit stream (MSB first)
+	        ulong bits = ((ulong)data[start] << 40) |
+	                     ((ulong)data[start + 1] << 32) |
+	                     ((ulong)data[start + 2] << 24) |
+	                     ((ulong)data[start + 3] << 16) |
+	                     ((ulong)data[start + 4] << 8) |
+	                     ((ulong)data[start + 5]);
 
 	        var sb = new StringBuilder(8);
-	        // Extract eight 6-bit values, left-to-right
-	        for (int i = 7; i >= 0; i--)
+
+	        // Extract 8 characters, from MSB (left) to LSB (right)
+	        for (int i = 0; i < 8; i++)
 	        {
-		        int charIndex = (int)((bitString >> (i * 6)) & 0x3F);
-		        char c = ia5[charIndex];
-		        sb.Append(c);
+		        int shift = (7 - i) * 6;  // character 1 = top 6 bits
+		        int code = (int)((bits >> shift) & 0x3F);
+		        sb.Append(ia5[code]);
 	        }
 
-	        // Trim trailing/leading spaces
 	        return sb.ToString().Trim();
         }
+
 
 
 		public static void WriteCsv(string filePath, List<Cat021Record> records)
