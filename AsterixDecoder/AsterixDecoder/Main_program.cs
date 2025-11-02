@@ -17,7 +17,7 @@ namespace AsterixDecoder
             27.257                                          // Elevación terreno (2.007m) + altura antena (25.25m)
         );
 
-        static void Main(string[] args)
+        static void Maimn(string[] args)
         {
             try
             {
