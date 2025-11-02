@@ -17,24 +17,22 @@ namespace AsterixDecoder
             27.257                                          // Elevación terreno (2.007m) + altura antena (25.25m)
         );
 
-        static void Maimn(string[] args)
+        static void Main(string[] args)
         {
             try
             {
-                Console.WriteLine("====================================");
-                Console.WriteLine("   DECODIFICADOR ASTERIX CAT048");
-                Console.WriteLine("====================================\n");
+                Console.WriteLine("DECODIFICADOR ASTERIX CAT048");
 
                 // Paso 1: Inicializar GeoUtils con el centro de proyección en el radar BCN
                 Console.WriteLine("[1/5] Inicializando sistema de coordenadas...");
                 GeoUtils geoUtils = new GeoUtils(0.081819190843, 6378137.0, RadarBCN);
-                Console.WriteLine("      ✓ GeoUtils inicializado correctamente\n");
+                Console.WriteLine("GeoUtils inicializado correctamente\n");
 
                 // Paso 2: Abrir y leer el archivo binario
                 Console.WriteLine("[2/5] Leyendo archivo ASTERIX binario...");
                 var reader = new BinaryFileReader("datos_asterix_radar.ast");
                 var messages = reader.ReadMessages();
-                Console.WriteLine($"      ✓ Archivo leído: {messages.Count} mensajes encontrados\n");
+                Console.WriteLine($"Archivo leído: {messages.Count} mensajes encontrados\n");
 
                 // Paso 3: Crear lista de objetos CAT048
                 var cat048List = new Cat048List();
@@ -66,8 +64,8 @@ namespace AsterixDecoder
                     }
                 }
 
-                Console.WriteLine($"      ✓ Mensajes CAT048 encontrados: {cat048Count}");
-                Console.WriteLine($"      ✓ Registros procesados: {processedCount}\n");
+                Console.WriteLine($"Mensajes CAT048 encontrados: {cat048Count}");
+                Console.WriteLine($"Registros procesados: {processedCount}\n");
 
                 // Paso 5: Mostrar estadísticas y resultados
                 Console.WriteLine("[4/5] Generando estadísticas...");
@@ -88,12 +86,12 @@ namespace AsterixDecoder
                     
                     if (uniqueAddresses.Count > 5)
                     {
-                        Console.WriteLine($"  ... y {uniqueAddresses.Count - 5} aeronaves más");
+                        Console.WriteLine($"... y {uniqueAddresses.Count - 5} aeronaves más");
                     }
                 }
                 else
                 {
-                    Console.WriteLine("      ⚠ No se encontraron registros CAT048 en el archivo.");
+                    Console.WriteLine("No se encontraron registros CAT048 en el archivo.");
                 }
 
                 // Paso 6: Opciones de exportación
@@ -150,19 +148,18 @@ namespace AsterixDecoder
                         break;
                 }
 
-                Console.WriteLine("\n====================================");
+                
                 Console.WriteLine("  Decodificación completada con éxito");
-                Console.WriteLine("====================================");
             }
             catch (FileNotFoundException ex)
             {
-                Console.WriteLine($"\n*** ERROR: Archivo no encontrado ***");
+                Console.WriteLine($"\nERROR: Archivo no encontrado");
                 Console.WriteLine($"No se pudo encontrar el archivo: {ex.Message}");
                 Console.WriteLine("Asegúrate de que el archivo 'datos_asterix_radar.ast' existe en el directorio de ejecución.");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"\n*** ERROR CRÍTICO ***");
+                Console.WriteLine($"\nERROR CRÍTICO");
                 Console.WriteLine($"Mensaje: {ex.Message}");
                 Console.WriteLine($"\nDetalles técnicos:");
                 Console.WriteLine(ex.StackTrace);

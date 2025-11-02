@@ -108,8 +108,8 @@ namespace AsterixDecoder.Models.CAT048
                 Console.WriteLine($"  - Time: {r.Time}");
                 Console.WriteLine($"  - LAT: {FormatValue(r.LAT, "F6")}");
                 Console.WriteLine($"  - LON: {FormatValue(r.LON, "F6")}");
-                Console.WriteLine($"  - H (QNH corr.): {FormatValue(r.H, "F2")} ft");
-                Console.WriteLine($"  - H(m): {FormatValue(r.H_m, "F0")} m");
+                Console.WriteLine($"  - H (QNH corr.): {FormatValue(r.H_m, "F2")} m");
+                Console.WriteLine($"  - H(m): {FormatValue(r.H, "F0")} ft");
                 Console.WriteLine($"  - RHO: {FormatValue(r.RHO, "F3")} NM");
                 Console.WriteLine($"  - THETA: {FormatValue(r.THETA, "F2")} deg");
                 Console.WriteLine($"  - Mode3/A: {r.Mode3A}");
@@ -175,44 +175,46 @@ namespace AsterixDecoder.Models.CAT048
         }
 
         /// <summary>
-        /// Exporta los registros a formato CSV
+        /// Exporta los registros a formato CSV con campos ordenados según especificación
         /// </summary>
         public string ExportToCSV()
         {
             var csv = new System.Text.StringBuilder();
             
             // Header
-            csv.AppendLine("CAT,SAC,SIC,Time,LAT,LON,H,H_m,RHO,THETA,Mode3A,FL,TA,TI,BP,RA,RollAngle,ITA,GS,TAR,TAS,HDG,IAS,MACH,BAR,IVV,TN,GSSD,HDG2,Stat");
+            csv.AppendLine("CAT,SAC,SIC,Time,LAT,LON,H,H(m),RHO,THETA,Mode3/A,FL,TA,TI,BP,RA,TTA,GS,TAR,TAS,HDG,IAS,MACH,BAR,IVV,TN,GS(kt),HDG2,STAT");
             
             // Data rows
             foreach (var r in records)
             {
-                csv.AppendLine($"{r.CAT},{r.SAC},{r.SIC},{r.Time}," +
-                    $"{FormatCSV(r.LAT)}," +
-                    $"{FormatCSV(r.LON)}," +
-                    $"{FormatCSV(r.H)}," +
-                    $"{FormatCSV(r.H_m)}," +
-                    $"{r.RHO:F3}," +
-                    $"{r.THETA:F2}," +
+                csv.AppendLine(
+                    $"{r.CAT}," +
+                    $"{r.SAC}," +
+                    $"{r.SIC}," +
+                    $"{r.Time}," +
+                    $"{FormatCSVInvariant(r.LAT, "F8")}," +      // Más precisión para LAT
+                    $"{FormatCSVInvariant(r.LON, "F8")}," +      // Más precisión para LON
+                    $"{FormatCSVInvariant(r.H)}," +              // H en pies
+                    $"{FormatCSVInvariant(r.H_m)}," +            // H en metros
+                    $"{FormatDoubleInvariant(r.RHO, "F6")}," +   // RHO con más precisión
+                    $"{FormatDoubleInvariant(r.THETA, "F6")}," + // THETA con más precisión
                     $"{r.Mode3A}," +
-                    $"{FormatCSV(r.FL)}," +
+                    $"{FormatCSVInvariant(r.FL)}," +             // FL puede ser N/A
                     $"{r.TA}," +
                     $"{r.TI}," +
-                    $"{FormatCSV(r.BP)}," +
-                    $"{r.RA}," +
-                    $"{FormatCSV(r.RollAngle)}," +
-                    $"{r.ITA}," +
-                    $"{FormatCSV(r.GS)}," +
-                    $"{FormatCSV(r.TAR)}," +
-                    $"{FormatCSV(r.TAS)}," +
-                    $"{FormatCSV(r.HDG)}," +
-                    $"{FormatCSV(r.IAS)}," +
-                    $"{FormatCSV(r.MACH)}," +
-                    $"{FormatCSV(r.BAR)}," +
-                    $"{FormatCSV(r.IVV)}," +
-                    $"{(r.TN.HasValue ? r.TN.Value.ToString() : "")}," +
-                    $"{FormatCSV(r.GSSD)}," +
-                    $"{FormatCSV(r.HDG2)}," +
+                    $"{FormatCSVInvariant(r.BP, "F0")}," +       // BP sin decimales
+                    $"{FormatCSVInvariant(r.RollAngle, "F3")}," +// TTA (Roll Angle)
+                    $"{FormatCSVInvariant(r.GS, "F3")}," +       // GS calculado
+                    $"{FormatCSVInvariant(r.TAR, "F0")}," +      // TAR sin decimales
+                    $"{(r.TAS.HasValue ? r.TAS.Value.ToString("F0", System.Globalization.CultureInfo.InvariantCulture) : "NV")}," + // TAS
+                    $"{FormatCSVInvariant(r.HDG, "F6")}," +      // HDG (-180/180)
+                    $"{(r.IAS.HasValue ? r.IAS.Value.ToString("F0", System.Globalization.CultureInfo.InvariantCulture) : "NV")}," + // IAS
+                    $"{(r.MACH.HasValue ? r.MACH.Value.ToString("F3", System.Globalization.CultureInfo.InvariantCulture) : "NV")}," + // MACH
+                    $"{FormatCSVInvariant(r.BAR, "F0")}," +      // BAR
+                    $"{FormatCSVInvariant(r.IVV, "F0")}," +      // IVV
+                    $"{(r.TN.HasValue ? r.TN.Value.ToString() : "")}," + // TN
+                    $"{FormatCSVInvariant(r.GSSD, "F1")}," +     // GS desde BDS 5.0
+                    $"{FormatCSVInvariant(r.HDG2, "F4")}," +     // HDG2 (0-360)
                     $"\"{r.Stat}\"");
             }
             
@@ -222,6 +224,20 @@ namespace AsterixDecoder.Models.CAT048
         private string FormatCSV(double? value)
         {
             return value.HasValue ? value.Value.ToString("F6") : "";
+        }
+
+        // Método auxiliar actualizado
+        private string FormatCSVInvariant(double? value, string format = "F6", string nullValue = "N/A")
+        {
+            if (!value.HasValue)
+                return nullValue;
+            
+            return value.Value.ToString(format, System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        private string FormatDoubleInvariant(double value, string format)
+        {
+            return value.ToString(format, System.Globalization.CultureInfo.InvariantCulture);
         }
     }
 }
