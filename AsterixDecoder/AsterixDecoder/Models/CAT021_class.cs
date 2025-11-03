@@ -47,8 +47,10 @@ namespace AsterixDecoder.Models
             // FRN29 - I021/170
             public string Target_Identification { get; set; }
 
-            // FRN48 - Re-data
+            // FRN48 - Re-data Barometric Pressure 
             public byte[] Reserved_Expansion_Field { get; set; }
+            public bool? BarometricPressureSource { get; set; } 
+            public double BarometricPressureSetting { get; set; }
         }
 
         public Cat021Decoder(byte[] asterixData, double qnhActual=1013.25)
@@ -101,7 +103,14 @@ namespace AsterixDecoder.Models
                 if (record.Flight_Level > 0)
                 {
 	                double indicatedAltitude = record.Flight_Level * 100; // FL100 = 10,000 ft
-	                if (indicatedAltitude < 6000)
+	                bool isBelowTA = indicatedAltitude < 6000;
+
+	                // Determine which barometric source to apply
+	                bool useQNH = record.BarometricPressureSource.HasValue
+		                ? record.BarometricPressureSource.Value
+		                : isBelowTA; // fallback if BPS missing
+
+	                if (useQNH)
 	                {
 		                record.Real_Altitude_ft = indicatedAltitude + (Actual_QNH - 1013.25) * 30.0;
 	                }
@@ -109,7 +118,13 @@ namespace AsterixDecoder.Models
 	                {
 		                record.Real_Altitude_ft = indicatedAltitude;
 	                }
+	                // Console.WriteLine(
+		               //  $"[ALT CHECK] FL={record.Flight_Level:000} → {record.Real_Altitude_ft,7:F0} ft | " +
+		               //  $"BPS={(record.BarometricPressureSource.HasValue ? (record.BarometricPressureSource.Value ? "QNH" : "STD") : "UNK")} " +
+		               //  $"| " +
+		               //  $"Region={(isBelowTA ? "Below TA" : "Above TA")} | QNH={Actual_QNH:F2} hPa");
                 }
+
                 records.Add(record);
                 currentByte = recordEnd;
             }
@@ -452,8 +467,14 @@ namespace AsterixDecoder.Models
             // FRN 34 - I021/110 - Trajectory Intent (no need to decode)
             if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(1, recordEnd))
             {
-	            currentByte+= 1; // Skip Trajectory Intent
+	            // Keep reading until FX bit (bit 1) = 0
+	            do
+	            {
+		            byte b = data[currentByte++];
+		            if ((b & 0b00000001) == 0) break; // FX=0 => done
+	            } while (currentByte < recordEnd);
             }
+
             
             // FRN 35 - I021/016 - Service Management (no need to decode)
             if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(1, recordEnd))
@@ -482,8 +503,12 @@ namespace AsterixDecoder.Models
 			// FRN 39 - I021/250 - Mode S MB Data (no need to decode)
 			if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(1, recordEnd))
 			{
-				currentByte += 1; // Skip Mode S MB Data
+				byte rep = data[currentByte++]; // number of repetitions
+				int bytesToSkip = rep * 8;      // each repetition = 8 bytes
+				if (CheckBytes(bytesToSkip, recordEnd))
+					currentByte += bytesToSkip;
 			}
+
 			
 			// FRN 40 - I021/260 - ACAS Resolution Advisory Report (no need to decode)
 			if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(7, recordEnd))
@@ -494,24 +519,66 @@ namespace AsterixDecoder.Models
 			// FRN 41 - I021/270 - Reciever ID (no need to decode)
 			if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(1, recordEnd))
 			{
-				currentByte += 2; // Reciever ID
+				currentByte += 1; // Reciever ID
 			}
 			
 			// FRN 42 - I021/280 - Data Ages (no need to decode)
 			if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(1, recordEnd))
 			{
-				currentByte += 1; // Data Ages
+				// Skip 1..N bytes while FX=1
+				do
+				{
+					byte b = data[currentByte++];
+					if ((b & 0b00000001) == 0) break;
+				} while (currentByte < recordEnd);
 			}
 
-
+			
             // FRN 48 - Reserved Expansion Field
+            // --- FRN48 : Reserved Expansion Field (REF) ---
             if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(1, recordEnd))
             {
-	            int len = data[currentByte++];
-	            record.Reserved_Expansion_Field = new byte[len];
-	            Array.Copy(data, currentByte, record.Reserved_Expansion_Field, 0, len);
-	            currentByte += len;
+	            int start = currentByte;
+	            byte indicator = data[currentByte++];
+
+	            Console.WriteLine($"[FRN48] Indicator = 0x{indicator:X2} (bits: {Convert.ToString(indicator, 2).PadLeft(8, '0')})");
+
+	            bool hasBPS = (indicator & 0b1000_0000) != 0; // bit 8 = BPS flag
+	            record.BarometricPressureSetting = 1013.25;      // initialize (in case absent)
+
+	            if (hasBPS)
+	            {
+		            if (CheckBytes(2, recordEnd))
+		            {
+			            ushort raw = (ushort)((data[currentByte] << 8) | data[currentByte + 1]);
+			            currentByte += 2;
+
+			            // Extract bits 12–1 → 0x0FFF mask
+			            int bpsRaw = raw & 0x0FFF;
+			            double bpsValue = 800.0 + bpsRaw * 0.1; // per ASTERIX definition
+
+			            record.BarometricPressureSetting = bpsValue;
+
+			            Console.WriteLine($"   → BPS present: raw=0x{raw:X4} ({bpsRaw}) → {bpsValue:F1} hPa");
+		            }
+		            else
+		            {
+			            Console.WriteLine("   Not enough bytes for BPS field!");
+		            }
+	            }
+	            else
+	            {
+		            Console.WriteLine("   No BPS present in REF");
+	            }
+
+	            // FX = bit 1 of last octet
+	            if ((indicator & 0x01) != 0)
+	            {
+		            Console.WriteLine("   FX=1 → more REF octets follow (not handled yet)");
+	            }
             }
+
+
         }
         
         // Em faig aquests mètodes per poder decodificar la FRN29 amb els noms que em dona problema per captar els números dels callsigns
