@@ -12,10 +12,12 @@ namespace AsterixDecoder
         {
             Console.WriteLine("\n=== Running CAT021 Decoder ===\n");
 
-            // Path to your ASTERIX CAT021 file
-            string filePath = "/Users/marcrodulfo/Documents/datos_asterix_adsb.ast"; // change if needed
+            // Input ASTERIX file
+            string filePath = "/Users/marcrodulfo/Documents/datos_asterix_adsb.ast";
 
-            // Verify file exists
+            // CSV output path
+            string csvOutputPath = "/Users/marcrodulfo/Documents/decoded_cat021.csv";
+
             if (!File.Exists(filePath))
             {
                 Console.WriteLine("❗ File not found. Please check the path.");
@@ -24,30 +26,51 @@ namespace AsterixDecoder
 
             try
             {
-                // Read the ASTERIX binary data
                 byte[] data = File.ReadAllBytes(filePath);
+                double qnhActual = 1013.25; // adjust as needed
 
-                // Actual QNH value (you can modify this)
-                double qnhActual = 1016.0;
-
-                // Decode CAT021 messages
                 var decoder = new Cat021Decoder(data, qnhActual);
                 var records = decoder.Decode();
 
                 Console.WriteLine($"✅ Successfully decoded {records.Count} airborne CAT021 records.\n");
 
-                // Print the first 10 decoded records
+                // Print table header
+                // Print table header
+                Console.WriteLine("{0,-3} {1,-3} {2,-8} {3,-9} {4,-9} {5,-6} {6,-6} {7,-7} {8,-8} {9,-10} {10,-2}",
+                    "CAT", "SAC", "SIC", "Time", "LAT", "LON", "Mode3/A", "FL", "TA", "TI", "BP");
+
+                // Print each record
                 foreach (var r in records)
                 {
-                    Console.WriteLine(
-                        $"[{r.Target_Identification,-8}] " +
-                        $"Addr={r.Target_Address} | " +
-                        $"Lat={r.WGS84_Latitude.ToString("F5", CultureInfo.InvariantCulture)}, " +
-                        $"Lon={r.WGS84_Longitude.ToString("F5", CultureInfo.InvariantCulture)} | " +
-                        $"FL={r.Flight_Level} | " +
-                        $"Alt(ft)={r.Real_Altitude_ft:F1}"
-                    );
+                    string timeStr = r.Time_Reception_Position.HasValue
+                        ? r.Time_Reception_Position.Value.ToString(@"hh\:mm\:ss")
+                        : "--:--:--";
+
+                    string ta = r.Target_Address ?? "------";
+                    string ti = r.Target_Identification ?? "--------";
+                    string bp = r.TargetReportDescriptor ?? "";
+
+                    string sac = "--";
+                    string sic = "--";
+                    if (!string.IsNullOrEmpty(r.DataSourceIdentifier) && r.DataSourceIdentifier.Contains("SAC:"))
+                    {
+                        var parts = r.DataSourceIdentifier.Split(' ');
+                        if (parts.Length == 2)
+                        {
+                            sac = parts[0].Replace("SAC:", "");
+                            sic = parts[1].Replace("SIC:", "");
+                        }
+                    }
+
+                    Console.WriteLine("{0,-6} {1,-6} {2,-3} {3,-8} {4,-9:F5} {5,-9:F5} {6,-6} {7,-6} {8,-7} {9,-10} {10,-2}",
+                        "CAT021", sac, sic, timeStr, r.WGS84_Latitude, r.WGS84_Longitude,
+                        r.Mode3A_Code, r.Flight_Level, ta, ti, bp);
                 }
+
+
+                // Write CSV
+                Cat021Decoder.WriteCsv(csvOutputPath, records);
+                Console.WriteLine($"\n✅ CSV file written to: {csvOutputPath}");
             }
             catch (Exception ex)
             {

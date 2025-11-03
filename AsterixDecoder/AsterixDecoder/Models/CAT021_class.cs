@@ -36,7 +36,7 @@ namespace AsterixDecoder.Models
             public string Target_Address { get; set; }
 
             // FRN 12 - I021/073
-            public TimeSpan Time_Reception_Position { get; set; }
+            public TimeSpan? Time_Reception_Position { get; set; }
 
             // FRN 19 - I021/070
             public string Mode3A_Code { get; set; }
@@ -102,9 +102,13 @@ namespace AsterixDecoder.Models
                 {
 	                double indicatedAltitude = record.Flight_Level * 100; // FL100 = 10,000 ft
 	                if (indicatedAltitude < 6000)
+	                {
 		                record.Real_Altitude_ft = indicatedAltitude + (Actual_QNH - 1013.25) * 30.0;
+	                }
 	                else
+	                {
 		                record.Real_Altitude_ft = indicatedAltitude;
+	                }
                 }
                 records.Add(record);
                 currentByte = recordEnd;
@@ -233,8 +237,8 @@ namespace AsterixDecoder.Models
 		    if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(3, recordEnd))
 		    {
 			    currentByte += 3;
-			    Console.WriteLine($"[DEBUG] Entering FRN8 decode at offset={currentByte:X}, next 6 bytes = " +
-			                      $"{BitConverter.ToString(data, currentByte, 6)}");
+			    //Console.WriteLine($"[DEBUG] Entering FRN8 decode at offset={currentByte:X}, next 6 bytes = " +
+			                      //$"{BitConverter.ToString(data, currentByte, 6)}");
 		    }
 
 		    // FRN 9 - I021/100 Airspeed
@@ -254,7 +258,7 @@ namespace AsterixDecoder.Models
 		    {
 		        record.Target_Address = BitConverter.ToString(data, currentByte, 3).Replace("-", "");
 		        currentByte += 3;
-		        Console.WriteLine($"Target_Address:{record.Target_Address}");
+		        //Console.WriteLine($"Target_Address:{record.Target_Address}");
 		    }
 
 		    // FRN 12 - I021/073 Time of Reception of Position
@@ -313,7 +317,7 @@ namespace AsterixDecoder.Models
 		        int mode3a = (data[currentByte] << 8) | data[currentByte + 1];
 		        currentByte += 2;
 		        record.Mode3A_Code = Convert.ToString(mode3a & 0x0FFF, 8);
-		        Console.WriteLine(record.Mode3A_Code);
+		        //Console.WriteLine(record.Mode3A_Code);
 		    }
 
 		    // FRN 20 - I021/143 Roll Angle
@@ -322,16 +326,31 @@ namespace AsterixDecoder.Models
 		        currentByte += 2;
 		    }
 
-		    // FRN 21 – I021/090 – Flight Level (2 bytes, 25 ft increments)
+		    // FRN 21 – I021/145 – Flight Level (2 bytes, 25 ft increments)
 		    if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(2, recordEnd))
 		    {
 			    byte msb = data[currentByte++];
 			    byte lsb = data[currentByte++];
 
-			    int raw = ((msb & 0x7F) << 8) | lsb; // strip status bit
-			    record.Flight_Level = raw / 4;       // 25 ft increments
+			    // Strip bit 16 (MSB) which is a status bit
+			    int rawFl = ((msb & 0x7F) << 8) | lsb;
+
+			    // Convert to Flight Level (1 FL = 25 ft)
+			    record.Flight_Level = rawFl / 4;
+
+			    // Convert to standard feet
 			    record.Real_Altitude_ft = record.Flight_Level * 100.0;
+
+			    //Console.WriteLine($"[FRN21 DEBUG] raw=0x{rawFl:X4}, FL={record.Flight_Level}, Alt(ft)={record.Real_Altitude_ft}");
+
+			    // Detect below TA (6000 ft)
+			    if (record.Real_Altitude_ft < 6000)
+			    {
+				    //Console.WriteLine($"⚠️ Aircraft below TA: Alt={record.Real_Altitude_ft} ft");
+				    // Apply QNH correction here if needed
+			    }
 		    }
+
 
 			// FRN 22 – I021/152 – Magnetic Heading
 			if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(2, recordEnd))
@@ -381,7 +400,7 @@ namespace AsterixDecoder.Models
 				int frn29Start = currentByte;
 
 				// Debug: show primary 6 bytes
-				Console.WriteLine($"[FRN29 DEBUG] Start={frn29Start:X} Next6={BitConverter.ToString(data, frn29Start, 6)}");
+				//Console.WriteLine($"[FRN29 DEBUG] Start={frn29Start:X} Next6={BitConverter.ToString(data, frn29Start, 6)}");
 
 				// Decode primary 6 bytes (8 IA-5 characters)
 				record.Target_Identification = DecodeTargetIdentification(data, frn29Start, 6);
@@ -393,7 +412,7 @@ namespace AsterixDecoder.Models
 					int bytesLeft = recordEnd - currentByte;
 					int bytesToRead = Math.Min(6, bytesLeft); // decode in 6-byte chunks
 
-					Console.WriteLine($"[FRN29 EXT DEBUG] Start={currentByte:X} Next6={BitConverter.ToString(data, currentByte, bytesToRead)}");
+					//Console.WriteLine($"[FRN29 EXT DEBUG] Start={currentByte:X} Next6={BitConverter.ToString(data, currentByte, bytesToRead)}");
 
 					// Decode extension segment and append
 					string extension = DecodeTargetIdentification(data, currentByte, bytesToRead);
@@ -402,7 +421,7 @@ namespace AsterixDecoder.Models
 					currentByte += bytesToRead;
 				}
 
-				Console.WriteLine($"→ FRN29 decoded = '{record.Target_Identification}'");
+				//Console.WriteLine($"→ FRN29 decoded = '{record.Target_Identification}'");
 			}
 
 
@@ -495,7 +514,7 @@ namespace AsterixDecoder.Models
             }
         }
         
-        // --- Helper Methods ---
+        // Em faig aquests mètodes per poder decodificar la FRN29 amb els noms que em dona problema per captar els números dels callsigns
         private static string DecodeTargetIdentification(byte[] data, int startIndex, int length)
         {
 	        char[] chars = new char[length * 8 / 6]; // 6-bit IA-5 mapping
@@ -568,11 +587,34 @@ namespace AsterixDecoder.Models
 		{
 			using (var writer = new StreamWriter(filePath, false, Encoding.UTF8))
 			{
-				writer.WriteLine("DataSourceIdentifier,WGS84_Latitude,WGS84_Longitude,Target_Address,Time_Reception_Position,Mode3A_Code,Flight_Level,Target_Identification,Real_Altitude_ft");
+				writer.WriteLine("CAT;SAC;SIC;Time;LAT;LON;Mode3A_Code;FL;TA;TI;BP");
 				foreach (var r in records)
 				{
-					writer.WriteLine($"{r.DataSourceIdentifier},{r.WGS84_Latitude.ToString(CultureInfo.InvariantCulture)},{r.WGS84_Longitude.ToString(CultureInfo.InvariantCulture)},{r.Target_Address},{r.Time_Reception_Position},{r.Mode3A_Code},{r.Flight_Level},{r.Target_Identification},{r.Real_Altitude_ft.ToString("F1", CultureInfo.InvariantCulture)}");
+					string timeStr = r.Time_Reception_Position.HasValue
+						? r.Time_Reception_Position.Value.ToString(@"hh\:mm\:ss")
+						: "--:--:--";
+
+					string ta = r.Target_Address ?? "------";
+					string ti = r.Target_Identification ?? "--------";
+					string bp = r.TargetReportDescriptor ?? "";
+
+					string sac = "--";
+					string sic = "--";
+					if (!string.IsNullOrEmpty(r.DataSourceIdentifier) && r.DataSourceIdentifier.Contains("SAC:"))
+					{
+						var parts = r.DataSourceIdentifier.Split(' ');
+						if (parts.Length == 2)
+						{
+							sac = parts[0].Replace("SAC:", "");
+							sic = parts[1].Replace("SIC:", "");
+						}
+					}
+					string latStr = r.WGS84_Latitude.ToString("F6", CultureInfo.InvariantCulture);
+					string lonStr = r.WGS84_Longitude.ToString("F6", CultureInfo.InvariantCulture);
+
+					writer.WriteLine($"021;{sac};{sic};{timeStr};{latStr};{lonStr};{r.Mode3A_Code};{r.Flight_Level};{ta};{ti};{bp}");
 				}
+
 			}
 		}
     }
