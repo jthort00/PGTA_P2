@@ -23,8 +23,8 @@ namespace AsterixDecoder.Models.CAT048
         public string TA { get; set; }         
         public string TI { get; set; }          
         public double? BP { get; set; }         
-        public double? RA { get; set; }        // Cambiado a nullable
-        public double TTA { get; set; }     // Cambiado a no nullable     
+        public double? RA { get; set; }        
+        public double TTA { get; set; }          
         public double? GS { get; set; }         
         public double? TAR { get; set; }        
         public double? TAS { get; set; }        

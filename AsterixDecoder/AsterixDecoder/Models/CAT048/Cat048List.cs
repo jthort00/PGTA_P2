@@ -212,9 +212,9 @@ namespace AsterixDecoder.Models.CAT048
                     $"{FormatCSVInvariant(r.BP, "F3", "")}\t" +   // BP
                     $"{FormatCSVInvariant(r.RA, "F3")}\t" +                                 // RA
                     $"{FormatCSVInvariant(r.TTA, "F3")}\t" +// TTA (Roll Angle)
-                    $"{FormatCSVInvariant(r.GS, "F0", "")}\t" +   // GS
-                    $"{FormatCSVInvariant(r.TAR, "F0", "")}\t" +  // TAR
-                    $"{FormatCSVInvariant(r.TAS, "F0", "")}\t" +  // TAS
+                    $"{FormatCSVInvariant(r.GS, "F3", "")}\t" +   // GS
+                    $"{FormatCSVInvariant(r.TAR, "F3", "")}\t" +  // TAR
+                    $"{FormatCSVInvariant(r.TAS, "F3", "")}\t" +  // TAS
                     $"{FormatCSVInvariant(r.HDG, "F6")}\t" +      // HDG
                     $"{FormatCSVInvariant(r.IAS, "F3", "")}\t" +  // IAS
                     $"{FormatCSVInvariant(r.MACH, "F3")}\t" +     // MACH

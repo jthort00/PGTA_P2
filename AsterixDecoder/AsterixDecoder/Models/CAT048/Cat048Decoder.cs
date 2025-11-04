@@ -663,7 +663,7 @@ namespace AsterixDecoder.Models.CAT048
                 int barValue = ((block.RawData[4] & 0x0F) << 5) | ((block.RawData[5] >> 3) & 0x1F); // bits 36-44
                 
                 if (barSign)
-                    block.BarometricAltitudeRate = barValue * -32.0;
+                    block.BarometricAltitudeRate = -32.0;
                 else
                     block.BarometricAltitudeRate = barValue * 32.0;
             }
