@@ -36,7 +36,7 @@ namespace AsterixDecoder.Models
             public string Target_Address { get; set; }
 
             // FRN 12 - I021/073
-            public TimeSpan Time_Reception_Position { get; set; }
+            public TimeSpan? Time_Reception_Position { get; set; }
 
             // FRN 19 - I021/070
             public string Mode3A_Code { get; set; }
@@ -47,8 +47,10 @@ namespace AsterixDecoder.Models
             // FRN29 - I021/170
             public string Target_Identification { get; set; }
 
-            // FRN48 - Re-data
+            // FRN48 - Re-data Barometric Pressure 
             public byte[] Reserved_Expansion_Field { get; set; }
+            public bool? BarometricPressureSource { get; set; } 
+            public double BarometricPressureSetting { get; set; }
         }
 
         public Cat021Decoder(byte[] asterixData, double qnhActual=1013.25)
@@ -101,11 +103,28 @@ namespace AsterixDecoder.Models
                 if (record.Flight_Level > 0)
                 {
 	                double indicatedAltitude = record.Flight_Level * 100; // FL100 = 10,000 ft
-	                if (indicatedAltitude < 6000)
+	                bool isBelowTA = indicatedAltitude < 6000;
+
+	                // Determine which barometric source to apply
+	                bool useQNH = record.BarometricPressureSource.HasValue
+		                ? record.BarometricPressureSource.Value
+		                : isBelowTA; // fallback if BPS missing
+
+	                if (useQNH)
+	                {
 		                record.Real_Altitude_ft = indicatedAltitude + (Actual_QNH - 1013.25) * 30.0;
+	                }
 	                else
+	                {
 		                record.Real_Altitude_ft = indicatedAltitude;
+	                }
+	                // Console.WriteLine(
+		               //  $"[ALT CHECK] FL={record.Flight_Level:000} → {record.Real_Altitude_ft,7:F0} ft | " +
+		               //  $"BPS={(record.BarometricPressureSource.HasValue ? (record.BarometricPressureSource.Value ? "QNH" : "STD") : "UNK")} " +
+		               //  $"| " +
+		               //  $"Region={(isBelowTA ? "Below TA" : "Above TA")} | QNH={Actual_QNH:F2} hPa");
                 }
+
                 records.Add(record);
                 currentByte = recordEnd;
             }
@@ -232,10 +251,9 @@ namespace AsterixDecoder.Models
 		    // FRN 8 - I021/072 Time Applicability Velocity
 		    if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(3, recordEnd))
 		    {
-			    Console.WriteLine($"[DEBUG] Entering FRN8 decode at offset={currentByte:X}, next 6 bytes = " +
-			                      $"{BitConverter.ToString(data, currentByte, 6)}");
-
-		        currentByte += 3;
+			    currentByte += 3;
+			    //Console.WriteLine($"[DEBUG] Entering FRN8 decode at offset={currentByte:X}, next 6 bytes = " +
+			                      //$"{BitConverter.ToString(data, currentByte, 6)}");
 		    }
 
 		    // FRN 9 - I021/100 Airspeed
@@ -294,7 +312,12 @@ namespace AsterixDecoder.Models
 		    // FRN 17 - I021/141 Quality Indicators
 		    if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(1, recordEnd))
 		    {
-		        currentByte += 1;
+			    bool fx = true;
+			    while (fx && currentByte < recordEnd)
+			    {
+				    byte b = data[currentByte++];
+				    fx = (b & 0x01) != 0;  // FX bit (bit 1) -> if set, another octet follows
+			    }
 		    }
 
 		    // FRN 18 - I021/142 MOPS Version
@@ -309,6 +332,7 @@ namespace AsterixDecoder.Models
 		        int mode3a = (data[currentByte] << 8) | data[currentByte + 1];
 		        currentByte += 2;
 		        record.Mode3A_Code = Convert.ToString(mode3a & 0x0FFF, 8);
+		        //Console.WriteLine(record.Mode3A_Code);
 		    }
 
 		    // FRN 20 - I021/143 Roll Angle
@@ -317,16 +341,31 @@ namespace AsterixDecoder.Models
 		        currentByte += 2;
 		    }
 
-		    // FRN 21 – I021/090 – Flight Level (2 bytes, 25 ft increments)
+		    // FRN 21 – I021/145 – Flight Level (2 bytes, 25 ft increments)
 		    if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(2, recordEnd))
 		    {
 			    byte msb = data[currentByte++];
 			    byte lsb = data[currentByte++];
 
-			    int raw = ((msb & 0x7F) << 8) | lsb; // strip status bit
-			    record.Flight_Level = raw / 4;       // 25 ft increments
+			    // Strip bit 16 (MSB) which is a status bit
+			    int rawFl = ((msb & 0x7F) << 8) | lsb;
+
+			    // Convert to Flight Level (1 FL = 25 ft)
+			    record.Flight_Level = rawFl / 4;
+
+			    // Convert to standard feet
 			    record.Real_Altitude_ft = record.Flight_Level * 100.0;
+
+			    //Console.WriteLine($"[FRN21 DEBUG] raw=0x{rawFl:X4}, FL={record.Flight_Level}, Alt(ft)={record.Real_Altitude_ft}");
+
+			    // Detect below TA (6000 ft)
+			    if (record.Real_Altitude_ft < 6000)
+			    {
+				    //Console.WriteLine($"⚠️ Aircraft below TA: Alt={record.Real_Altitude_ft} ft");
+				    // Apply QNH correction here if needed
+			    }
 		    }
+
 
 			// FRN 22 – I021/152 – Magnetic Heading
 			if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(2, recordEnd))
@@ -364,28 +403,42 @@ namespace AsterixDecoder.Models
 				currentByte += 2;
 			}
 
-			// FRN 28 – I021/166 – Time of Report Transmission
+			// --- FRN 28 – I021/166 – Time of Report Transmission ---
 			if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(3, recordEnd))
 			{
-				currentByte += 3;
+				currentByte += 3; // keep as-is
 			}
-
-			// FRN 29 – I021/170 – Target Identification (6 bytes, 8 IA-5 characters)
+			
+			// --- FRN 29 – I021/170 – Target Identification (6 bytes primary, optional extensions) ---
 			if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(6, recordEnd))
 			{
-				Console.WriteLine($"[CHECK] Byte {currentByte:X}: next 6 bytes = {BitConverter.ToString(data, currentByte, 6)}");
+				int frn29Start = currentByte;
 
-				// Basic plausibility check:
-				// First byte typically has high bits set (>=0x20)
-				// Sixth byte often <0x80 because IA-5 bits end at 0x3F
-				//if (data[currentByte] < 0x10 || data[currentByte] > 0x7F)
-					//Console.WriteLine($"⚠️ Suspicious FRN29 start @ {currentByte:X}: byte[0]={data[currentByte]:X2}");
+				// Debug: show primary 6 bytes
+				//Console.WriteLine($"[FRN29 DEBUG] Start={frn29Start:X} Next6={BitConverter.ToString(data, frn29Start, 6)}");
 
-				record.Target_Identification = DecodeTargetIdentification(currentByte);
-				//Console.WriteLine($"→ Decoded FRN29 = '{record.Target_Identification}'");
-
+				// Decode primary 6 bytes (8 IA-5 characters)
+				record.Target_Identification = DecodeTargetIdentification(data, frn29Start, 6);
 				currentByte += 6;
+
+				// Check for optional extension bytes (FX = Field Extension bit, bit 1 of last byte of each segment)
+				while (currentByte < recordEnd && HasFRN29Extension(data, currentByte - 1))
+				{
+					int bytesLeft = recordEnd - currentByte;
+					int bytesToRead = Math.Min(6, bytesLeft); // decode in 6-byte chunks
+
+					//Console.WriteLine($"[FRN29 EXT DEBUG] Start={currentByte:X} Next6={BitConverter.ToString(data, currentByte, bytesToRead)}");
+
+					// Decode extension segment and append
+					string extension = DecodeTargetIdentification(data, currentByte, bytesToRead);
+					record.Target_Identification += extension;
+
+					currentByte += bytesToRead;
+				}
+
+				//Console.WriteLine($"→ FRN29 decoded = '{record.Target_Identification}'");
 			}
+
 
             // FRN 30 - I021/020 - Emitter Category (no need to decode)
             if(fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(1, recordEnd))
@@ -414,8 +467,14 @@ namespace AsterixDecoder.Models
             // FRN 34 - I021/110 - Trajectory Intent (no need to decode)
             if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(1, recordEnd))
             {
-	            currentByte+= 1; // Skip Trajectory Intent
+	            // Keep reading until FX bit (bit 1) = 0
+	            do
+	            {
+		            byte b = data[currentByte++];
+		            if ((b & 0b00000001) == 0) break; // FX=0 => done
+	            } while (currentByte < recordEnd);
             }
+
             
             // FRN 35 - I021/016 - Service Management (no need to decode)
             if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(1, recordEnd))
@@ -444,8 +503,12 @@ namespace AsterixDecoder.Models
 			// FRN 39 - I021/250 - Mode S MB Data (no need to decode)
 			if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(1, recordEnd))
 			{
-				currentByte += 1; // Skip Mode S MB Data
+				byte rep = data[currentByte++]; // number of repetitions
+				int bytesToSkip = rep * 8;      // each repetition = 8 bytes
+				if (CheckBytes(bytesToSkip, recordEnd))
+					currentByte += bytesToSkip;
 			}
+
 			
 			// FRN 40 - I021/260 - ACAS Resolution Advisory Report (no need to decode)
 			if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(7, recordEnd))
@@ -456,24 +519,104 @@ namespace AsterixDecoder.Models
 			// FRN 41 - I021/270 - Reciever ID (no need to decode)
 			if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(1, recordEnd))
 			{
-				currentByte += 2; // Reciever ID
+				currentByte += 1; // Reciever ID
 			}
 			
 			// FRN 42 - I021/280 - Data Ages (no need to decode)
 			if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(1, recordEnd))
 			{
-				currentByte += 1; // Data Ages
+				// Skip 1..N bytes while FX=1
+				do
+				{
+					byte b = data[currentByte++];
+					if ((b & 0b00000001) == 0) break;
+				} while (currentByte < recordEnd);
 			}
 
-
+			
             // FRN 48 - Reserved Expansion Field
+            // --- FRN48 : Reserved Expansion Field (REF) ---
             if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(1, recordEnd))
             {
-	            int len = data[currentByte++];
-	            record.Reserved_Expansion_Field = new byte[len];
-	            Array.Copy(data, currentByte, record.Reserved_Expansion_Field, 0, len);
-	            currentByte += len;
+	            int start = currentByte;
+	            byte indicator = data[currentByte++];
+
+	            Console.WriteLine($"[FRN48] Indicator = 0x{indicator:X2} (bits: {Convert.ToString(indicator, 2).PadLeft(8, '0')})");
+
+	            bool hasBPS = (indicator & 0b1000_0000) != 0; // bit 8 = BPS flag
+	            record.BarometricPressureSetting = 1013.25;      // initialize (in case absent)
+
+	            if (hasBPS)
+	            {
+		            if (CheckBytes(2, recordEnd))
+		            {
+			            ushort raw = (ushort)((data[currentByte] << 8) | data[currentByte + 1]);
+			            currentByte += 2;
+
+			            // Extract bits 12–1 → 0x0FFF mask
+			            int bpsRaw = raw & 0x0FFF;
+			            double bpsValue = 800.0 + bpsRaw * 0.1; // per ASTERIX definition
+
+			            record.BarometricPressureSetting = bpsValue;
+
+			            Console.WriteLine($"   → BPS present: raw=0x{raw:X4} ({bpsRaw}) → {bpsValue:F1} hPa");
+		            }
+		            else
+		            {
+			            Console.WriteLine("   Not enough bytes for BPS field!");
+		            }
+	            }
+	            else
+	            {
+		            Console.WriteLine("   No BPS present in REF");
+	            }
+
+	            // FX = bit 1 of last octet
+	            if ((indicator & 0x01) != 0)
+	            {
+		            Console.WriteLine("   FX=1 → more REF octets follow (not handled yet)");
+	            }
             }
+
+
+        }
+        
+        // Em faig aquests mètodes per poder decodificar la FRN29 amb els noms que em dona problema per captar els números dels callsigns
+        private static string DecodeTargetIdentification(byte[] data, int startIndex, int length)
+        {
+	        char[] chars = new char[length * 8 / 6]; // 6-bit IA-5 mapping
+	        int bitPos = 0;
+
+	        for (int i = 0; i < chars.Length; i++)
+	        {
+		        int val = 0;
+		        for (int b = 0; b < 6; b++)
+		        {
+			        int byteIndex = startIndex + (bitPos + b) / 8;
+			        int bitIndex = 7 - ((bitPos + b) % 8);
+			        int bit = ((data[byteIndex] >> bitIndex) & 1);
+			        val = (val << 1) | bit;
+		        }
+		        chars[i] = IA5Map(val); // map 6-bit value to IA-5 char
+		        bitPos += 6;
+	        }
+
+	        return new string(chars);
+        }
+
+		// Check FX (bit 1 of last byte in segment)
+        private static bool HasFRN29Extension(byte[] data, int lastByteIndex)
+        {
+	        return (data[lastByteIndex] & 0x01) != 0; // FX = 1 → extension exists
+        }
+
+		// Map 6-bit IA-5 values to chars
+        private static char IA5Map(int val)
+        {
+	        if (val >= 1 && val <= 26) return (char)('A' + val - 1);
+	        if (val >= 48 && val <= 57) return (char)('0' + val - 48); // numeric
+	        if (val == 32) return ' ';
+	        return ' '; // fallback
         }
 
         private string DecodeTargetIdentification(int start)
@@ -511,11 +654,34 @@ namespace AsterixDecoder.Models
 		{
 			using (var writer = new StreamWriter(filePath, false, Encoding.UTF8))
 			{
-				writer.WriteLine("DataSourceIdentifier,WGS84_Latitude,WGS84_Longitude,Target_Address,Time_Reception_Position,Mode3A_Code,Flight_Level,Target_Identification,Real_Altitude_ft");
+				writer.WriteLine("CAT;SAC;SIC;Time;LAT;LON;Mode3A_Code;FL;TA;TI;BP");
 				foreach (var r in records)
 				{
-					writer.WriteLine($"{r.DataSourceIdentifier},{r.WGS84_Latitude.ToString(CultureInfo.InvariantCulture)},{r.WGS84_Longitude.ToString(CultureInfo.InvariantCulture)},{r.Target_Address},{r.Time_Reception_Position},{r.Mode3A_Code},{r.Flight_Level},{r.Target_Identification},{r.Real_Altitude_ft.ToString("F1", CultureInfo.InvariantCulture)}");
+					string timeStr = r.Time_Reception_Position.HasValue
+						? r.Time_Reception_Position.Value.ToString(@"hh\:mm\:ss")
+						: "--:--:--";
+
+					string ta = r.Target_Address ?? "------";
+					string ti = r.Target_Identification ?? "--------";
+					string bp = r.TargetReportDescriptor ?? "";
+
+					string sac = "--";
+					string sic = "--";
+					if (!string.IsNullOrEmpty(r.DataSourceIdentifier) && r.DataSourceIdentifier.Contains("SAC:"))
+					{
+						var parts = r.DataSourceIdentifier.Split(' ');
+						if (parts.Length == 2)
+						{
+							sac = parts[0].Replace("SAC:", "");
+							sic = parts[1].Replace("SIC:", "");
+						}
+					}
+					string latStr = r.WGS84_Latitude.ToString("F6", CultureInfo.InvariantCulture);
+					string lonStr = r.WGS84_Longitude.ToString("F6", CultureInfo.InvariantCulture);
+
+					writer.WriteLine($"021;{sac};{sic};{timeStr};{latStr};{lonStr};{r.Mode3A_Code};{r.Flight_Level};{ta};{ti};{bp}");
 				}
+
 			}
 		}
     }
