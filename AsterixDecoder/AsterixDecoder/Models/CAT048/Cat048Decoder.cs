@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace AsterixDecoder.Models.CAT048
@@ -61,8 +62,23 @@ namespace AsterixDecoder.Models.CAT048
                 }
                 hasExtension = (octet & 1) != 0;
             }
-
+            //// Mostrar información detallada del FSPEC
+            //Console.WriteLine("=== FSPEC Decodificado ===");
+            //Console.WriteLine($"Total bits: {fspec.Count}");
+            //var binaryString = string.Join("", fspec.Select(b => b ? "1" : "0"));
+            //Console.WriteLine($"Binario: {binaryString}");
+            //Console.WriteLine("Bits presentes:");
+            //for (int i = 0; i < fspec.Count; i++)
+            //{
+            //    if (fspec[i])
+            //    {
+            //        Console.WriteLine($"  FRN {i + 1} presente");
+            //        Console.WriteLine($"valor FSPEC {fspec[11]}");
+            //    }
+            //}
+            //Console.WriteLine("=====================");
             return fspec;
+            
         }
 
         private void DecodeRecord(RawCat048Data record, List<bool> fspec, int recordEnd)
@@ -183,11 +199,11 @@ namespace AsterixDecoder.Models.CAT048
                 } while (hasExtension && CheckBytes(1, recordEnd));
             }
 
-            // FX del primer octeto FSPEC
-            if (fspecIndex < fspec.Count && fspec[fspecIndex++])
-            {
-                // Extension marker
-            }
+            //// FX del primer octeto FSPEC
+            //if (fspecIndex < fspec.Count && fspec[fspecIndex++])
+            //{
+            //    // Extension marker
+            //}
 
             // FRN 8 - I048/220 - Aircraft Address
             if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(3, recordEnd))
@@ -197,7 +213,7 @@ namespace AsterixDecoder.Models.CAT048
                 record.AircraftAddress = addr.ToString("X6");
             }
 
-            // FRN 9 - I048/240 - Aircraft Identification (fix: 6 bytes IA-5 packed)
+            // FRN 9 - I048/240 - Aircraft Identification
             if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(6, recordEnd))
             {
                 // Leer los 6 bytes empaquetados
@@ -232,13 +248,15 @@ namespace AsterixDecoder.Models.CAT048
                 DecodeModeSMBData(record, recordEnd);
             }
 
-            // FRN 11 - I048/161 - Track Number (CORREGIR)
+            // FRN 11 - I048/161 - Track Number
+            //Console.WriteLine($"Fspec index {fspecIndex}, {fspec[fspecIndex-1]}, {CheckBytes(2, recordEnd)}");
             if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(2, recordEnd))
             {
                 // Los bits 16-13 están a 0, Track Number está en bits 12-1
                 int tn = ((data[currentByte] & 0x0F) << 8) | data[currentByte + 1];
                 currentByte += 2;
                 record.TrackNumber = tn;
+                //Console.WriteLine($"Track Number: {tn}");
             }
 
             // FRN 12 - I048/042 - Calculated Position (NO DECODIFICAR)
@@ -247,41 +265,98 @@ namespace AsterixDecoder.Models.CAT048
                 currentByte += 4; // Skip sin decodificar
             }
 
-            // FRN 13 - I048/200 - Calculated Track Velocity
+            // FRN 13 - I048/200 - Calculated Track Velocity in Polar Co-ordinates
             if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(4, recordEnd))
             {
-                // Groundspeed (bits 32-17) and Heading (bits 16-1)
-                // Both are 16-bit values as per ASTERIX CAT048 I048/200:
-                // - GS LSB = 2^-14 NM/s (unsigned magnitude)
-                // - Heading LSB = 360/2^16 degrees (0..360)
+                
+                // Ground Speed - 16 bits sin signo, LSB = 0.22 kt o 2^-14 NM/s
                 int gsRaw = (data[currentByte] << 8) | data[currentByte + 1];
                 currentByte += 2;
+                double groundSpeedKt = gsRaw * 0.22; // Convertir a knots
+                //Console.WriteLine($"GroundSpeed: {groundSpeedKt} kt");
 
+                
+
+                // Heading - 16 bits sin signo, LSB = 360 / 2^16 grados
                 int hdgRaw = (data[currentByte] << 8) | data[currentByte + 1];
                 currentByte += 2;
-
-                // Store as-is in VxRaw (GS) and VyRaw (Heading) for later scaling in Cat048
-                record.VxRaw = gsRaw;
-                record.VyRaw = hdgRaw;
+                double heading = hdgRaw * (360.0 / Math.Pow(2, 16)); // grados
+                
+                record.VxRaw = groundSpeedKt;
+                record.VyRaw = heading;
             }
 
             // FRN 14 - I048/170 - Track Status
             if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(1, recordEnd))
             {
+                var trackStatus = new StringBuilder();
+                int octetCount = 0;
                 bool hasExtension;
+   
                 do
                 {
                     byte octet = data[currentByte++];
+                    octetCount++;
+            
+                    // Primer octeto - Información principal del estado de la traza
+                    if (octetCount == 1)
+                    {
+                        // CNF - Bit 8 - Confirmed vs. Tentative Track
+                        if ((octet & 0x80) != 0)
+                            trackStatus.Append("CNF ");
+        
+                        // TRE - Bit 7 - Track vs. Plot
+                        if ((octet & 0x40) != 0)
+                            trackStatus.Append("TRE ");
+   
+                        // CST - Bit 6 - Coasting
+                        if ((octet & 0x20) != 0)
+                            trackStatus.Append("CST ");
+        
+                        // MAH - Bit 5 - Horizontal Manoeuvre
+                        if ((octet & 0x10) != 0)
+                            trackStatus.Append("MAH ");
+          
+                        // TCC - Bit 4 - Trajectory Change
+                        if ((octet & 0x08) != 0)
+                            trackStatus.Append("TCC ");
+
+                        // STH - Bit 3 - Smoothed Track Height
+                        if ((octet & 0x04) != 0)
+                            trackStatus.Append("STH ");
+        
+                        // TOM - Bit 2 - Track detection type
+                        if ((octet & 0x02) != 0)
+                            trackStatus.Append("TOM ");
+                    }
+                    // Segundo octeto - Información adicional
+                    else if (octetCount == 2)
+                    {
+                        // DOU - Bit 8 - Signals Doubt about Track
+                        if ((octet & 0x80) != 0)
+                            trackStatus.Append("DOU ");
+   
+                        // MRS - Bit 7 - Military Response
+                        if ((octet & 0x40) != 0)
+                            trackStatus.Append("MRS ");
+  
+                        // GHO - Bit 6 - Ghost Track
+                        if ((octet & 0x20) != 0)
+                            trackStatus.Append("GHO ");
+                    }
+          
                     hasExtension = (octet & 0x01) != 0;
-                }
-                while (hasExtension && CheckBytes(1, recordEnd));
+          
+                } while (hasExtension && CheckBytes(1, recordEnd));
+     
+                record.TrackStatus = trackStatus.ToString().Trim();
             }
 
-			// FX del segundo octeto FSPEC
-            if (fspecIndex < fspec.Count && fspec[fspecIndex++])
-            {
-                // Extension marker
-            }
+			//// FX del segundo octeto FSPEC
+   //         if (fspecIndex < fspec.Count && fspec[fspecIndex++])
+   //         {
+   //             // Extension marker
+   //         }
 
             // Continuar con el resto de los campos según FSPEC...
             DecodeRemainingFields(record, fspec, ref fspecIndex, recordEnd);
@@ -336,7 +411,7 @@ namespace AsterixDecoder.Models.CAT048
                 currentByte += 2; // Skip
             }
 
-            // FRN 21 - I048/230 - Communications/ACAS Capability ✓ DECODIFICAR
+            // FRN 21 - I048/230 - Communications/ACAS Capability
             if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(2, recordEnd))
             {
                 byte byte1 = data[currentByte++];
@@ -362,11 +437,11 @@ namespace AsterixDecoder.Models.CAT048
                 record.B1B = b1b;
             }
 			
-			// FX
-            if (fspecIndex < fspec.Count && fspec[fspecIndex++])
-            {
-                // Tercer octeto FSPEC
-            }
+			//// FX
+   //         if (fspecIndex < fspec.Count && fspec[fspecIndex++])
+   //         {
+   //             // Tercer octeto FSPEC
+   //         }
 
             // FRN 22 - I048/260 - ACAS Resolution Advisory
             if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(7, recordEnd))
@@ -484,53 +559,127 @@ namespace AsterixDecoder.Models.CAT048
         private void DecodeBDS50(ModeSMBDataBlock block)
         {
             // BDS 5.0 - Track and Turn Report
-            // Roll Angle (bits 2-11) - 10 bits con signo
-            int roll = (block.RawData[0] & 0x3F) << 4 | (block.RawData[1] >> 4) & 0x0F;
-            if ((roll & 0x200) != 0) roll |= unchecked((int)0xFFFFFC00);
-            block.RollAngle = roll * 45.0 / 256.0; // Siempre guardar, incluso si es 0
-
-            // True Track Angle (bits 13-23) - 11 bits
-            int track = (block.RawData[1] & 0x07) << 8 | block.RawData[2];
-            block.TrueTrackAngle = track * 90.0 / 512.0;
-
-            // Ground Speed (bits 25-34) - 10 bits
-            int gs = (block.RawData[3] & 0x7F) << 3 | (block.RawData[4] >> 5) & 0x07;
-            block.GroundSpeed = gs * 2.0; // knots - 0 es válido (avión parado)
-
-            // Track Angle Rate (bits 36-45) - 10 bits con signo
-            int tar = (block.RawData[4] & 0x1F) << 5 | (block.RawData[5] >> 3) & 0x1F;
-            if ((tar & 0x200) != 0) tar |= unchecked((int)0xFFFFFC00);
-            block.TrackAngleRate = tar * 8.0 / 256.0; // Siempre guardar
-
-            // True Airspeed (bits 47-56) - 10 bits
-            int tas = (block.RawData[5] & 0x03) << 8 | block.RawData[6];
-            if (tas != 0) block.TrueAirspeed = tas * 2.0; // knots - 0 no es válido
+            // Según I048/250: bits 64-9 contienen los datos BDS (7 octetos)
+            // block.RawData debería tener 8 octetos: [7 bytes de datos BDS][1 byte BDS code]
+            
+            // Para BDS 5.0, los datos están en los primeros 7 bytes (índices 0-6)            
+            // Roll Angle: bit 1 (status), bit 2 (sign), bits 3-11 (9 bits value)
+            bool rollStatus = (block.RawData[0] & 0x80) != 0; // bit 1
+            if (rollStatus)
+            {
+                bool rollSign = (block.RawData[0] & 0x40) != 0; // bit 2
+                int rollValue = ((block.RawData[0] & 0x3F) << 3) | ((block.RawData[1] >> 5) & 0x07); // bits 3-11
+                
+                double rollAngle = rollValue * 45.0 / 256.0;
+                block.RollAngle = rollSign ? -rollAngle : rollAngle;
+            }
+            
+            // True Track Angle: bit 12 (status), bit 13 (sign), bits 14-23 (10 bits value)
+            bool trackStatus = (block.RawData[1] & 0x10) != 0; // bit 12
+            if (trackStatus)
+            {
+                bool trackSign = (block.RawData[1] & 0x08) != 0; // bit 13
+                int trackValue = ((block.RawData[1] & 0x07) << 7) | ((block.RawData[2] >> 1) & 0x7F); // bits 14-23
+                
+                double trackAngle = trackValue * 90.0 / 512.0;
+                block.TrueTrackAngle = trackSign ? -trackAngle : trackAngle;
+            }
+            
+            // Ground Speed: bit 24 (status), bits 25-34 (10 bits value)
+            bool gsStatus = (block.RawData[2] & 0x01) != 0; // bit 24
+            if (gsStatus)
+            {
+                int gsValue = (block.RawData[3] << 2) | ((block.RawData[4] >> 6) & 0x03); // bits 25-34
+                block.GroundSpeed = gsValue * 2.0; // LSB = 2 kt
+                
+                if (block.GroundSpeed >= 2046)
+                    block.GroundSpeed = 2046;
+            }
+            
+            // Track Angle Rate: bit 35 (status), bit 36 (sign), bits 37-45 (9 bits value)
+            bool tarStatus = (block.RawData[4] & 0x20) != 0; // bit 35
+            if (tarStatus)
+            {
+                bool tarSign = (block.RawData[4] & 0x10) != 0; // bit 36
+                int tarValue = ((block.RawData[4] & 0x0F) << 5) | ((block.RawData[5] >> 3) & 0x1F); // bits 37-45
+                
+                double trackRate = tarValue * 8.0 / 256.0;
+                block.TrackAngleRate = tarSign ? -trackRate : trackRate;
+            }
+            
+            // True Airspeed: bit 46 (status), bits 47-56 (10 bits value)
+            bool tasStatus = (block.RawData[5] & 0x04) != 0; // bit 46
+            if (tasStatus)
+            {
+                int tasValue = ((block.RawData[5] & 0x03) << 8) | block.RawData[6]; // bits 47-56
+                block.TrueAirspeed = tasValue * 2.0; // LSB = 2 kt
+                
+                if (block.TrueAirspeed >= 2046)
+                    block.TrueAirspeed = 2046;
+            }
         }
 
         private void DecodeBDS60(ModeSMBDataBlock block)
         {
             // BDS 6.0 - Heading and Speed Report
-            // Magnetic Heading (bits 2-12) - 11 bits
-            int heading = (block.RawData[0] & 0x3F) << 5 | (block.RawData[1] >> 3) & 0x1F;
-            block.MagneticHeading = heading;
-
-            // Indicated Airspeed (bits 14-23) - 10 bits
-            int ias = (block.RawData[1] & 0x03) << 8 | block.RawData[2];
-            if (ias != 0) block.IndicatedAirspeed = ias; // knots
-
-            // Mach Number (bits 25-34) - 10 bits
-            int mach = (block.RawData[3] & 0x7F) << 3 | (block.RawData[4] >> 5) & 0x07;
-            if (mach != 0) block.MachNumber = mach * 0.008;
-
-            // Barometric Altitude Rate (bits 36-45) - 10 bits con signo
-            int bar = (block.RawData[4] & 0x1F) << 5 | (block.RawData[5] >> 3) & 0x1F;
-            if ((bar & 0x200) != 0) bar |= unchecked((int)0xFFFFFC00);
-            block.BarometricAltitudeRate = bar * 32.0; // ft/min - Siempre guardar
-
-            // Inertial Vertical Velocity (bits 47-56) - 10 bits con signo
-            int ivv = (block.RawData[5] & 0x03) << 8 | block.RawData[6];
-            if ((ivv & 0x200) != 0) ivv |= unchecked((int)0xFFFFFC00);
-            block.InertialVerticalVelocity = ivv * 32.0; // ft/min - Siempre guardar
+            
+            // Magnetic Heading: bit 0 (status), bit 1 (sign), bits 2-11 (10 bits value)
+            bool hdgStatus = (block.RawData[0] & 0x80) != 0; // bit 0
+            if (hdgStatus)
+            {
+                bool hdgSign = (block.RawData[0] & 0x40) != 0; // bit 1
+                int hdgValue = ((block.RawData[0] & 0x3F) << 4) | ((block.RawData[1] >> 4) & 0x0F); // bits 2-11
+                
+                if (hdgSign)
+                    block.MagneticHeading = -180.0 + hdgValue * 90.0 / 512.0;
+                else
+                    block.MagneticHeading = hdgValue * 90.0 / 512.0;
+            }
+            
+            // Indicated Airspeed: bit 12 (status), bits 13-22 (10 bits value)
+            bool iasStatus = (block.RawData[1] & 0x08) != 0; // bit 12
+            if (iasStatus)
+            {
+                int iasValue = ((block.RawData[1] & 0x07) << 7) | ((block.RawData[2] >> 1) & 0x7F); // bits 13-22
+                block.IndicatedAirspeed = iasValue * 1.0; // LSB = 1 kt
+            }
+            
+            // Mach Number: bit 23 (status), bits 24-33 (10 bits value)
+            bool machStatus = (block.RawData[2] & 0x01) != 0; // bit 23
+            if (machStatus)
+            {
+                int machValue = (block.RawData[3] << 2) | ((block.RawData[4] >> 6) & 0x03); // bits 24-33
+                block.MachNumber = machValue * 0.004; // LSB = 0.004 Mach
+                
+                if (block.MachNumber >= 4.092)
+                    block.MachNumber = 4.092;
+            }
+            
+            // Barometric Altitude Rate: bit 34 (status), bit 35 (sign), bits 36-44 (9 bits value)
+            bool barStatus = (block.RawData[4] & 0x20) != 0; // bit 34
+            if (barStatus)
+            {
+                bool barSign = (block.RawData[4] & 0x10) != 0; // bit 35
+                int barValue = ((block.RawData[4] & 0x0F) << 5) | ((block.RawData[5] >> 3) & 0x1F); // bits 36-44
+                
+                if (barSign)
+                    block.BarometricAltitudeRate = barValue * -32.0;
+                else
+                    block.BarometricAltitudeRate = barValue * 32.0;
+            }
+            
+            // Inertial Vertical Velocity: bit 45 (status), bit 46 (sign), bits 47-55 (9 bits value)
+            bool ivvStatus = (block.RawData[5] & 0x04) != 0; // bit 45
+            if (ivvStatus)
+            {
+                bool ivvSign = (block.RawData[5] & 0x02) != 0; // bit 46
+                int ivvValue = ((block.RawData[5] & 0x01) << 8) | block.RawData[6]; // bits 47-55
+                
+                if (ivvSign)
+                    block.InertialVerticalVelocity = ivvValue * -32.0;
+                else
+                    block.InertialVerticalVelocity = ivvValue * 32.0;
+            }
         }
 
         private char DecodeIA5Character(byte b)

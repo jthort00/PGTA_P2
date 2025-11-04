@@ -7,36 +7,32 @@
       "RelativeMoniker": "D:0:0:{AAB8DF9D-2DBA-4AD9-BCC2-46040D106529}|AsterixDecoder\\AsterixDecoder.csproj|solutionrelative:asterixdecoder\\models\\cat048\\cat048decoder.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{AAB8DF9D-2DBA-4AD9-BCC2-46040D106529}|AsterixDecoder\\AsterixDecoder.csproj|c:\\users\\fedep\\source\\repos\\jthort00\\pgta_p2\\asterixdecoder\\asterixdecoder\\main_program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{AAB8DF9D-2DBA-4AD9-BCC2-46040D106529}|AsterixDecoder\\AsterixDecoder.csproj|solutionrelative:asterixdecoder\\main_program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{AAB8DF9D-2DBA-4AD9-BCC2-46040D106529}|AsterixDecoder\\AsterixDecoder.csproj|c:\\users\\fedep\\source\\repos\\jthort00\\pgta_p2\\asterixdecoder\\asterixdecoder\\models\\cat048\\cat048.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{AAB8DF9D-2DBA-4AD9-BCC2-46040D106529}|AsterixDecoder\\AsterixDecoder.csproj|solutionrelative:asterixdecoder\\models\\cat048\\cat048.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{AAB8DF9D-2DBA-4AD9-BCC2-46040D106529}|AsterixDecoder\\AsterixDecoder.csproj|c:\\users\\fedep\\source\\repos\\jthort00\\pgta_p2\\asterixdecoder\\asterixdecoder\\models\\cat048\\modesbmdatablock.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{AAB8DF9D-2DBA-4AD9-BCC2-46040D106529}|AsterixDecoder\\AsterixDecoder.csproj|solutionrelative:asterixdecoder\\models\\cat048\\modesbmdatablock.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{AAB8DF9D-2DBA-4AD9-BCC2-46040D106529}|AsterixDecoder\\AsterixDecoder.csproj|c:\\users\\fedep\\source\\repos\\jthort00\\pgta_p2\\asterixdecoder\\asterixdecoder\\io\\binaryfilereader.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{AAB8DF9D-2DBA-4AD9-BCC2-46040D106529}|AsterixDecoder\\AsterixDecoder.csproj|solutionrelative:asterixdecoder\\io\\binaryfilereader.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{AAB8DF9D-2DBA-4AD9-BCC2-46040D106529}|AsterixDecoder\\AsterixDecoder.csproj|c:\\users\\fedep\\source\\repos\\jthort00\\pgta_p2\\asterixdecoder\\asterixdecoder\\main_program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{AAB8DF9D-2DBA-4AD9-BCC2-46040D106529}|AsterixDecoder\\AsterixDecoder.csproj|solutionrelative:asterixdecoder\\main_program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{AAB8DF9D-2DBA-4AD9-BCC2-46040D106529}|AsterixDecoder\\AsterixDecoder.csproj|c:\\users\\fedep\\source\\repos\\jthort00\\pgta_p2\\asterixdecoder\\asterixdecoder\\models\\cat048\\cat048list.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{AAB8DF9D-2DBA-4AD9-BCC2-46040D106529}|AsterixDecoder\\AsterixDecoder.csproj|solutionrelative:asterixdecoder\\models\\cat048\\cat048list.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
+      "AbsoluteMoniker": "D:0:0:{AAB8DF9D-2DBA-4AD9-BCC2-46040D106529}|AsterixDecoder\\AsterixDecoder.csproj|c:\\users\\fedep\\source\\repos\\jthort00\\pgta_p2\\asterixdecoder\\asterixdecoder\\models\\generalmatrix_v2.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{AAB8DF9D-2DBA-4AD9-BCC2-46040D106529}|AsterixDecoder\\AsterixDecoder.csproj|solutionrelative:asterixdecoder\\models\\generalmatrix_v2.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{AAB8DF9D-2DBA-4AD9-BCC2-46040D106529}|AsterixDecoder\\AsterixDecoder.csproj|c:\\users\\fedep\\source\\repos\\jthort00\\pgta_p2\\asterixdecoder\\asterixdecoder\\io\\binaryfilereader.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{AAB8DF9D-2DBA-4AD9-BCC2-46040D106529}|AsterixDecoder\\AsterixDecoder.csproj|solutionrelative:asterixdecoder\\io\\binaryfilereader.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{AAB8DF9D-2DBA-4AD9-BCC2-46040D106529}|AsterixDecoder\\AsterixDecoder.csproj|c:\\users\\fedep\\source\\repos\\jthort00\\pgta_p2\\asterixdecoder\\asterixdecoder\\models\\cat048\\rawcat048data.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{AAB8DF9D-2DBA-4AD9-BCC2-46040D106529}|AsterixDecoder\\AsterixDecoder.csproj|solutionrelative:asterixdecoder\\models\\cat048\\rawcat048data.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{AAB8DF9D-2DBA-4AD9-BCC2-46040D106529}|AsterixDecoder\\AsterixDecoder.csproj|c:\\users\\fedep\\source\\repos\\jthort00\\pgta_p2\\asterixdecoder\\asterixdecoder\\models\\geoutils.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{AAB8DF9D-2DBA-4AD9-BCC2-46040D106529}|AsterixDecoder\\AsterixDecoder.csproj|solutionrelative:asterixdecoder\\models\\geoutils.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{AAB8DF9D-2DBA-4AD9-BCC2-46040D106529}|AsterixDecoder\\AsterixDecoder.csproj|c:\\users\\fedep\\source\\repos\\jthort00\\pgta_p2\\asterixdecoder\\asterixdecoder\\models\\generalmatrix_v2.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{AAB8DF9D-2DBA-4AD9-BCC2-46040D106529}|AsterixDecoder\\AsterixDecoder.csproj|solutionrelative:asterixdecoder\\models\\generalmatrix_v2.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{AAB8DF9D-2DBA-4AD9-BCC2-46040D106529}|AsterixDecoder\\AsterixDecoder.csproj|c:\\users\\fedep\\source\\repos\\jthort00\\pgta_p2\\asterixdecoder\\asterixdecoder\\models\\cat048\\modesbmdatablock.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{AAB8DF9D-2DBA-4AD9-BCC2-46040D106529}|AsterixDecoder\\AsterixDecoder.csproj|solutionrelative:asterixdecoder\\models\\cat048\\modesbmdatablock.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -46,15 +42,24 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 4,
+          "SelectedChildIndex": 1,
           "Children": [
             {
               "$type": "Bookmark",
               "Name": "ST:0:0:{3ae79031-e1bc-11d0-8f78-00a0c9110057}"
             },
             {
-              "$type": "Bookmark",
-              "Name": "ST:0:0:{cce594b6-0c39-4442-ba28-10c64ac7e89f}"
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Cat048Decoder.cs",
+              "DocumentMoniker": "C:\\Users\\fedep\\source\\repos\\jthort00\\PGTA_P2\\AsterixDecoder\\AsterixDecoder\\Models\\CAT048\\Cat048Decoder.cs",
+              "RelativeDocumentMoniker": "AsterixDecoder\\Models\\CAT048\\Cat048Decoder.cs",
+              "ToolTip": "C:\\Users\\fedep\\source\\repos\\jthort00\\PGTA_P2\\AsterixDecoder\\AsterixDecoder\\Models\\CAT048\\Cat048Decoder.cs*",
+              "RelativeToolTip": "AsterixDecoder\\Models\\CAT048\\Cat048Decoder.cs*",
+              "ViewState": "AgIAAEECAAAAAAAAAAAvwGkCAAAuAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-13T15:38:57.893Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
@@ -64,14 +69,14 @@
               "RelativeDocumentMoniker": "AsterixDecoder\\Models\\CAT048\\RawCat048Data.cs",
               "ToolTip": "C:\\Users\\fedep\\source\\repos\\jthort00\\PGTA_P2\\AsterixDecoder\\AsterixDecoder\\Models\\CAT048\\RawCat048Data.cs",
               "RelativeToolTip": "AsterixDecoder\\Models\\CAT048\\RawCat048Data.cs",
-              "ViewState": "AgIAABcAAAAAAAAAAAAIwEsAAAAxAAAAAAAAAA==",
+              "ViewState": "AgIAADAAAAAAAAAAAAAAAEAAAABCAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-11-02T19:53:47.562Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 7,
               "Title": "ModeSBMDataBlock.cs",
               "DocumentMoniker": "C:\\Users\\fedep\\source\\repos\\jthort00\\PGTA_P2\\AsterixDecoder\\AsterixDecoder\\Models\\CAT048\\ModeSBMDataBlock.cs",
               "RelativeDocumentMoniker": "AsterixDecoder\\Models\\CAT048\\ModeSBMDataBlock.cs",
@@ -84,46 +89,33 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "Cat048Decoder.cs",
-              "DocumentMoniker": "C:\\Users\\fedep\\source\\repos\\jthort00\\PGTA_P2\\AsterixDecoder\\AsterixDecoder\\Models\\CAT048\\Cat048Decoder.cs",
-              "RelativeDocumentMoniker": "AsterixDecoder\\Models\\CAT048\\Cat048Decoder.cs",
-              "ToolTip": "C:\\Users\\fedep\\source\\repos\\jthort00\\PGTA_P2\\AsterixDecoder\\AsterixDecoder\\Models\\CAT048\\Cat048Decoder.cs",
-              "RelativeToolTip": "AsterixDecoder\\Models\\CAT048\\Cat048Decoder.cs",
-              "ViewState": "AgIAAMoBAAAAAAAAAAAAwN8BAAARAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-13T15:38:57.893Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 1,
               "Title": "Cat048.cs",
               "DocumentMoniker": "C:\\Users\\fedep\\source\\repos\\jthort00\\PGTA_P2\\AsterixDecoder\\AsterixDecoder\\Models\\CAT048\\Cat048.cs",
               "RelativeDocumentMoniker": "AsterixDecoder\\Models\\CAT048\\Cat048.cs",
               "ToolTip": "C:\\Users\\fedep\\source\\repos\\jthort00\\PGTA_P2\\AsterixDecoder\\AsterixDecoder\\Models\\CAT048\\Cat048.cs",
               "RelativeToolTip": "AsterixDecoder\\Models\\CAT048\\Cat048.cs",
-              "ViewState": "AgIAAAYAAAAAAAAAAAAAAMIAAAAzAAAAAAAAAA==",
+              "ViewState": "AgIAAEgAAAAAAAAAAAAuwF8AAAAMAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-10-13T16:17:11.573Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 2,
               "Title": "Main_program.cs",
               "DocumentMoniker": "C:\\Users\\fedep\\source\\repos\\jthort00\\PGTA_P2\\AsterixDecoder\\AsterixDecoder\\Main_program.cs",
               "RelativeDocumentMoniker": "AsterixDecoder\\Main_program.cs",
               "ToolTip": "C:\\Users\\fedep\\source\\repos\\jthort00\\PGTA_P2\\AsterixDecoder\\AsterixDecoder\\Main_program.cs",
               "RelativeToolTip": "AsterixDecoder\\Main_program.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAABcAAAAjAAAAAAAAAA==",
+              "ViewState": "AgIAABYAAAAAAAAAAAAgwA0AAAAxAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-10-02T16:47:02.011Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 5,
               "Title": "BinaryFileReader.cs",
               "DocumentMoniker": "C:\\Users\\fedep\\source\\repos\\jthort00\\PGTA_P2\\AsterixDecoder\\AsterixDecoder\\IO\\BinaryFileReader.cs",
               "RelativeDocumentMoniker": "AsterixDecoder\\IO\\BinaryFileReader.cs",
@@ -136,40 +128,29 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 3,
               "Title": "Cat048List.cs",
               "DocumentMoniker": "C:\\Users\\fedep\\source\\repos\\jthort00\\PGTA_P2\\AsterixDecoder\\AsterixDecoder\\Models\\CAT048\\Cat048List.cs",
               "RelativeDocumentMoniker": "AsterixDecoder\\Models\\CAT048\\Cat048List.cs",
               "ToolTip": "C:\\Users\\fedep\\source\\repos\\jthort00\\PGTA_P2\\AsterixDecoder\\AsterixDecoder\\Models\\CAT048\\Cat048List.cs",
               "RelativeToolTip": "AsterixDecoder\\Models\\CAT048\\Cat048List.cs",
-              "ViewState": "AgIAAF8AAAAAAAAAAAAtwH4AAAA9AAAAAAAAAA==",
+              "ViewState": "AgIAACkAAAAAaGZmZmbwv94AAAAtAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-10-08T17:12:44.133Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 8,
+              "DocumentIndex": 4,
               "Title": "GeneralMatrix_v2.cs",
               "DocumentMoniker": "C:\\Users\\fedep\\source\\repos\\jthort00\\PGTA_P2\\AsterixDecoder\\AsterixDecoder\\Models\\GeneralMatrix_v2.cs",
               "RelativeDocumentMoniker": "AsterixDecoder\\Models\\GeneralMatrix_v2.cs",
               "ToolTip": "C:\\Users\\fedep\\source\\repos\\jthort00\\PGTA_P2\\AsterixDecoder\\AsterixDecoder\\Models\\GeneralMatrix_v2.cs",
               "RelativeToolTip": "AsterixDecoder\\Models\\GeneralMatrix_v2.cs",
-              "ViewState": "AQIAAAAAAAAAAAAAAAAAAFkAAAACAAAA",
+              "ViewState": "AgIAAFEAAAAAAAAAAAAAAHYAAAADAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-06T17:06:24.648Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 7,
-              "Title": "GeoUtils.cs",
-              "DocumentMoniker": "C:\\Users\\fedep\\source\\repos\\jthort00\\PGTA_P2\\AsterixDecoder\\AsterixDecoder\\Models\\GeoUtils.cs",
-              "RelativeDocumentMoniker": "AsterixDecoder\\Models\\GeoUtils.cs",
-              "ToolTip": "C:\\Users\\fedep\\source\\repos\\jthort00\\PGTA_P2\\AsterixDecoder\\AsterixDecoder\\Models\\GeoUtils.cs",
-              "RelativeToolTip": "AsterixDecoder\\Models\\GeoUtils.cs",
-              "ViewState": "AQIAAAAAAAAAAAAAAAAAAKwAAAAfAAAA",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-06T17:05:57.856Z"
+              "WhenOpened": "2025-10-06T17:06:24.648Z",
+              "EditorCaption": ""
             }
           ]
         }

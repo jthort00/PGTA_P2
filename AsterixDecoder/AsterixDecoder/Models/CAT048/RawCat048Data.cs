@@ -54,11 +54,11 @@ namespace AsterixDecoder.Models.CAT048
         // NO SE DECODIFICA (se salta)
 
         // FRN 13 - I048/200 - Calculated Track Velocity in Polar Representation
-        public int VxRaw { get; set; } // Groundspeed raw
-        public int VyRaw { get; set; } // Heading raw
+        public double VxRaw { get; set; } // Groundspeed raw
+        public double VyRaw { get; set; } // Heading raw
 
         // FRN 14 - I048/170 - Track Status
-        // (se lee pero no se almacena)
+        public string TrackStatus { get; set; }
 
         // FRN 21 - I048/230 - Communications/ACAS Capability and Flight Status
         public int COM { get; set; }     // Communications capability (3 bits)

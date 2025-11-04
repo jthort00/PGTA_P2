@@ -117,20 +117,19 @@ namespace AsterixDecoder.Models.CAT048
                 Console.WriteLine($"  - TA (Target Address): {r.TA}");
                 Console.WriteLine($"  - TI (Target ID): {r.TI}");
                 Console.WriteLine($"  - BP (Baro Press): {FormatValue(r.BP, "F2")} hPa");
-                Console.WriteLine($"  - RA (Antenna): {r.RA}");
-                Console.WriteLine($"  - Roll Angle: {FormatValue(r.RollAngle, "F2")} deg");
-                Console.WriteLine($"  - ITA: {r.ITA}");
-                Console.WriteLine($"  - GS (calc): {FormatValue(r.GS, "F1")} kt");
+                Console.WriteLine($"  - RA (Roll angle): {FormatValue(r.RA, "F2")}");
+                Console.WriteLine($"  - TTA: {r.TTA}");
+                Console.WriteLine($"  - GS (calc): {FormatValue(r.GS, "F3")} kt");
                 Console.WriteLine($"  - TAR (Track Rate): {FormatValue(r.TAR, "F3")} deg/s");
-                Console.WriteLine($"  - TAS: {FormatValue(r.TAS, "F0")} kt");
-                Console.WriteLine($"  - HDG (-180/180): {FormatValue(r.HDG, "F1")} deg");
-                Console.WriteLine($"  - IAS: {FormatValue(r.IAS, "F0")} kt");
+                Console.WriteLine($"  - TAS: {FormatValue(r.TAS, "F3")} kt");
+                Console.WriteLine($"  - HDG: {FormatValue(r.HDG, "F3")} deg");
+                Console.WriteLine($"  - IAS: {FormatValue(r.IAS, "F3")} kt");
                 Console.WriteLine($"  - MACH: {FormatValue(r.MACH, "F3")}");
-                Console.WriteLine($"  - BAR (Alt Rate): {FormatValue(r.BAR, "F1")} ft/min");
-                Console.WriteLine($"  - IVV (Vert Vel): {FormatValue(r.IVV, "F0")} ft/min");
+                Console.WriteLine($"  - BAR (Alt Rate): {FormatValue(r.BAR, "F3")} ft/min");
+                Console.WriteLine($"  - IVV (Vert Vel): {FormatValue(r.IVV, "F3")} ft/min");
                 Console.WriteLine($"  - TN (Track#): {(r.TN.HasValue ? r.TN.Value.ToString() : "N/A")}");
-                Console.WriteLine($"  - GSSD (BDS): {FormatValue(r.GSSD, "F0")} kt");
-                Console.WriteLine($"  - HDG2 (0-360): {FormatValue(r.HDG2, "F1")} deg");
+                Console.WriteLine($"  - GSSD (BDS): {FormatValue(r.GSSD, "F3")} kt");
+                Console.WriteLine($"  - HDG2 (0-360): {FormatValue(r.HDG2, "F3")} deg");
                 Console.WriteLine($"  - Stat: {r.Stat}");
                 Console.WriteLine();
             }
@@ -181,44 +180,82 @@ namespace AsterixDecoder.Models.CAT048
         {
             var csv = new System.Text.StringBuilder();
             
-            // Header
-            csv.AppendLine("CAT,SAC,SIC,Time,LAT,LON,H,H(m),RHO,THETA,Mode3/A,FL,TA,TI,BP,RA,TTA,GS,TAR,TAS,HDG,IAS,MACH,BAR,IVV,TN,GS(kt),HDG2,STAT");
+            // Header - Nuevas columnas según especificación
+            csv.AppendLine("CAT\tSAC\tSIC\tTime\tLat\tLon\tH_wgs\th_ft\tRHO\tTHETA\tMode_3A\tFlight_level\tModeC_corrected\tTarget_address\tTarget_identification\tMode_S\tBP\tRA\tTTA\tGS\tTAR\tTAS\tHDG\tIAS\tMACH\tBAR\tIVV\tTrack_number\tGround_speedkt\tHeading\tSAT230");
             
             // Data rows
             foreach (var r in records)
             {
+                // Construir campo Mode_S (BDS registers presentes)
+                string modeS = BuildModeSField(r);
+                
+                // Construir campo SAT230 (Communications capability)
+                string sat230 = BuildSAT230Field(r);
+                
                 csv.AppendLine(
-                    $"{r.CAT}," +
-                    $"{r.SAC}," +
-                    $"{r.SIC}," +
-                    $"{r.Time}," +
-                    $"{FormatCSVInvariant(r.LAT, "F8")}," +      // Más precisión para LAT
-                    $"{FormatCSVInvariant(r.LON, "F8")}," +      // Más precisión para LON
-                    $"{FormatCSVInvariant(r.H)}," +              // H en pies
-                    $"{FormatCSVInvariant(r.H_m)}," +            // H en metros
-                    $"{FormatDoubleInvariant(r.RHO, "F6")}," +   // RHO con más precisión
-                    $"{FormatDoubleInvariant(r.THETA, "F6")}," + // THETA con más precisión
-                    $"{r.Mode3A}," +
-                    $"{FormatCSVInvariant(r.FL)}," +             // FL puede ser N/A
-                    $"{r.TA}," +
-                    $"{r.TI}," +
-                    $"{FormatCSVInvariant(r.BP, "F0")}," +       // BP sin decimales
-                    $"{FormatCSVInvariant(r.RollAngle, "F3")}," +// TTA (Roll Angle)
-                    $"{FormatCSVInvariant(r.GS, "F3")}," +       // GS calculado
-                    $"{FormatCSVInvariant(r.TAR, "F0")}," +      // TAR sin decimales
-                    $"{(r.TAS.HasValue ? r.TAS.Value.ToString("F0", System.Globalization.CultureInfo.InvariantCulture) : "NV")}," + // TAS
-                    $"{FormatCSVInvariant(r.HDG, "F6")}," +      // HDG (-180/180)
-                    $"{(r.IAS.HasValue ? r.IAS.Value.ToString("F0", System.Globalization.CultureInfo.InvariantCulture) : "NV")}," + // IAS
-                    $"{(r.MACH.HasValue ? r.MACH.Value.ToString("F3", System.Globalization.CultureInfo.InvariantCulture) : "NV")}," + // MACH
-                    $"{FormatCSVInvariant(r.BAR, "F0")}," +      // BAR
-                    $"{FormatCSVInvariant(r.IVV, "F0")}," +      // IVV
-                    $"{(r.TN.HasValue ? r.TN.Value.ToString() : "")}," + // TN
-                    $"{FormatCSVInvariant(r.GSSD, "F1")}," +     // GS desde BDS 5.0
-                    $"{FormatCSVInvariant(r.HDG2, "F4")}," +     // HDG2 (0-360)
-                    $"\"{r.Stat}\"");
+                    $"{r.CAT}\t" +
+                    $"{r.SAC}\t" +
+                    $"{r.SIC}\t" +
+                    $"{r.Time}\t" +
+                    $"{FormatCSVInvariant(r.LAT, "F8")}\t" +      // Lat
+                    $"{FormatCSVInvariant(r.LON, "F8")}\t" +      // Lon
+                    $"{FormatCSVInvariant(r.H_m, "F14")}\t" +     // H_wgs (metros WGS84)
+                    $"{FormatCSVInvariant(r.H, "F14")}\t" +       // h_ft (pies)
+                    $"{FormatDoubleInvariant(r.RHO, "F6")}\t" +   // RHO
+                    $"{FormatDoubleInvariant(r.THETA, "F6")}\t" + // THETA
+                    $"{r.Mode3A}\t" +                             // Mode_3A
+                    $"{FormatCSVInvariant(r.FL, "F3", "")}\t" +   // Flight_level
+                    $"{FormatCSVInvariant(r.H, "F3", "")}\t" +    // ModeC_corrected (H corregido con QNH)
+                    $"{r.TA}\t" +                                 // Target_address
+                    $"{r.TI}\t" +                                 // Target_identification
+                    $"{modeS}\t" +                                // Mode_S (BDS registers)
+                    $"{FormatCSVInvariant(r.BP, "F3", "")}\t" +   // BP
+                    $"{FormatCSVInvariant(r.RA, "F3")}\t" +                                 // RA
+                    $"{FormatCSVInvariant(r.TTA, "F3")}\t" +// TTA (Roll Angle)
+                    $"{FormatCSVInvariant(r.GS, "F0", "")}\t" +   // GS
+                    $"{FormatCSVInvariant(r.TAR, "F0", "")}\t" +  // TAR
+                    $"{FormatCSVInvariant(r.TAS, "F0", "")}\t" +  // TAS
+                    $"{FormatCSVInvariant(r.HDG, "F6")}\t" +      // HDG
+                    $"{FormatCSVInvariant(r.IAS, "F3", "")}\t" +  // IAS
+                    $"{FormatCSVInvariant(r.MACH, "F3")}\t" +     // MACH
+                    $"{FormatCSVInvariant(r.BAR, "F3", "")}\t" +  // BAR
+                    $"{FormatCSVInvariant(r.IVV, "F3", "")}\t" +  // IVV
+                    $"{FormatCSVInvariant(r.TN, "F3", "")}\t" + // Track_number
+                    $"{FormatCSVInvariant(r.GSSD, "F3", "")}\t" + // Ground_speedkt (BDS 5.0)
+                    $"{FormatCSVInvariant(r.HDG2, "F4")}\t" +     // Heading (0-360)
+                    $"{sat230}");                                  // SAT230
             }
             
             return csv.ToString();
+        }
+
+        /// <summary>
+        /// Construye el campo Mode_S con los BDS registers presentes
+        /// </summary>
+        private string BuildModeSField(Cat048 record)
+        {
+            var bdsList = new List<string>();
+            
+            // Verificar qué campos BDS están presentes
+            if (record.BP.HasValue) bdsList.Add("BDS:4,0");
+            if (record.RA.HasValue || record.TAR.HasValue || record.TAS.HasValue || record.GS.HasValue)
+                bdsList.Add("BDS:5,0");
+            if (record.HDG.HasValue || record.IAS.HasValue || record.MACH.HasValue || 
+                record.BAR.HasValue || record.IVV.HasValue)
+                bdsList.Add("BDS:6,0");
+            
+            return bdsList.Count > 0 ? string.Join(" ", bdsList) : "";
+        }
+
+        /// <summary>
+        /// Construye el campo SAT230 (Communications/ACAS Capability)
+        /// </summary>
+        private string BuildSAT230Field(Cat048 record)
+        {
+            if (!record.COM.HasValue && !record.STAT_230.HasValue)
+                return "";
+            
+            return record.Stat ?? "";
         }
 
         private string FormatCSV(double? value)

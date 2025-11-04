@@ -23,9 +23,8 @@ namespace AsterixDecoder.Models.CAT048
         public string TA { get; set; }         
         public string TI { get; set; }          
         public double? BP { get; set; }         
-        public string RA { get; set; }          
-        public double? RollAngle { get; set; }  
-        public string ITA { get; set; }         
+        public double? RA { get; set; }        // Cambiado a nullable
+        public double TTA { get; set; }     // Cambiado a no nullable     
         public double? GS { get; set; }         
         public double? TAR { get; set; }        
         public double? TAS { get; set; }        
@@ -85,6 +84,9 @@ namespace AsterixDecoder.Models.CAT048
             // Flight Level y altitud corregida
             ProcessFlightLevel(rawData);
 
+            // Procesar Mode S Data
+            ProcessModeSData(rawData);
+
             // Calcular Ground Speed y Heading desde I048/200 (Calculated Track Velocity)
             // NOTA: rawData.VxRaw y VyRaw NO son velocidades cartesianas
             // Según ASTERIX CAT048, I048/200 contiene:
@@ -92,24 +94,9 @@ namespace AsterixDecoder.Models.CAT048
             // - bits 16-1: Calculated Heading (LSB = 360/2^16 ≈ 0.0055°)
 
             if (rawData.VxRaw != 0 || rawData.VyRaw != 0)
-            {
-                // Ground Speed: LSB = 2^-14 NM/s. Convertir a knots (1 NM/s = 3600 kt)
-                double groundSpeedNmPerSec = rawData.VxRaw * Math.Pow(2, -14);
-                GS = groundSpeedNmPerSec * 3600.0;
-                
-                // Heading: LSB = 360/2^16. Calcular 0-360 y guardar en HDG2
-                double hdg360 = rawData.VyRaw * (360.0 / 65536.0);
-                HDG2 = hdg360;
-                
-                // Convertir a rango -180/+180 para HDG
-                if (hdg360 > 180.0)
-                {
-                    HDG = hdg360 - 360.0;
-                }
-                else
-                {
-                    HDG = hdg360;
-                }
+            {                
+                GSSD = rawData.VxRaw;
+				HDG2 = rawData.VyRaw;
             }
 
             // Status
@@ -121,9 +108,6 @@ namespace AsterixDecoder.Models.CAT048
             // Target ID (TI) - Aircraft Identification
             TI = rawData.AircraftIdentification ?? "N/A";
 
-            // Receiving Antenna (RA) - RAB indicator
-            RA = rawData.RABPresent ? "1" : "0";
-
             // Track Number
             if (rawData.TrackNumber > 0)
             {
@@ -132,12 +116,6 @@ namespace AsterixDecoder.Models.CAT048
 
             // Procesar I048/230 - Communications/ACAS Capability
             ProcessCommunicationsCapability(rawData);
-
-            // Procesar Mode S Data
-            ProcessModeSData(rawData);
-
-            // ITA - Reserved
-            ITA = "N/A";
         }
 
         private void ConvertPolarToWGS84(RawCat048Data rawData, GeoUtils geoUtils, CoordinatesWGS84 radarPosition)
@@ -174,7 +152,7 @@ namespace AsterixDecoder.Models.CAT048
         private void ProcessFlightLevel(RawCat048Data rawData)
         {       
             FL = rawData.FlightLevel / 4.0;
-            double altitudeFeet = FL.Value * 100.0;
+            double altitudeFeet = FL.HasValue ? FL.Value * 100 : 0;
 
             // Obtener QNH correcto
             double? qnhCurrent = null;
@@ -198,7 +176,7 @@ namespace AsterixDecoder.Models.CAT048
             else
             {
                 H = altitudeFeet;
-                H_m = altitudeFeet * GeoUtils.FEET2METERS;
+                H_m = H * GeoUtils.FEET2METERS;
             }
 			// Si FL raw es 0, no establecer FL (dejar como null)
             if (rawData.FlightLevel == 0)
@@ -242,8 +220,12 @@ namespace AsterixDecoder.Models.CAT048
             var bds50 = rawData.ModeSDataBlocks.FirstOrDefault(b => b.BDSRegister == 0x50);
             if (bds50 != null)
             {
-                // Roll Angle e TAR: 0 es válido
-                RollAngle = bds50.RollAngle;
+                // Roll Angle como nullable
+                if (bds50.RollAngle != 0)
+                {
+                    RA = -90 + Math.Abs(bds50.RollAngle);
+                }
+
                 TAR = bds50.TrackAngleRate;
 
                 // TAS: 0 no es válido, debe ser > 0
@@ -251,7 +233,9 @@ namespace AsterixDecoder.Models.CAT048
                     TAS = bds50.TrueAirspeed;
 
                 // GS desde BDS 5.0: 0 es válido
-                GSSD = bds50.GroundSpeed;
+                GS = bds50.GroundSpeed;
+
+                TTA = bds50.TrueTrackAngle;
             }
 
             // BDS 6.0 - Heading and Speed Report
@@ -260,7 +244,7 @@ namespace AsterixDecoder.Models.CAT048
             {
                 // Magnetic Heading: 0-360° es válido (norte magnético = 0°)
                 // LSB = 90/512 = 0.17578125° según BDS 6.0
-                HDG2 = bds60.MagneticHeading * (90.0 / 512.0);
+                HDG = bds60.MagneticHeading;
 
                 // IAS: 0 no es válido, debe ser > 0
                 if (bds60.IndicatedAirspeed > 0)
@@ -273,6 +257,8 @@ namespace AsterixDecoder.Models.CAT048
                 // BAR e IVV pueden ser negativos (descenso), 0 o positivos
                 BAR = bds60.BarometricAltitudeRate;
                 IVV = bds60.InertialVerticalVelocity;
+
+                
             }
         }
 
