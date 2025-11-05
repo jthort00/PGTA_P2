@@ -161,15 +161,7 @@ namespace AsterixDecoder.Models
         private void DecodeRecord(Cat021Record record, List<bool> fspec, int recordEnd)
 		{
 		    int fspecIndex = 0;
-
-		    // Console.WriteLine("\n================ FIRST RECORD DEBUG =================");
-		    // Console.WriteLine($"FSPEC bits ({fspec.Count}): {string.Join("", fspec.Select(b => b ? "1" : "0"))}");
-		    // for (int i = 0; i < Math.Min(fspec.Count, 10); i++)
-		    //     Console.WriteLine($"Bit {i+1,2}: FRN{i+1,2} = {(fspec[i] ? 1 : 0)}");
-		    // Console.WriteLine($"Record starts at byte offset {currentByte}");
-		    // Console.WriteLine($"RecordEnd={recordEnd}");
-		    // Console.WriteLine("----------------------------------------------------");
-
+		    
 		    // FRN 1 - I021/010 Data Source Identifier
 		    if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(2, recordEnd))
 		    {
@@ -584,70 +576,57 @@ namespace AsterixDecoder.Models
           }
 
           // --- FRN 48 – Reserved Expansion Field (REF) ---
-          // This is fspecIndex 47 (the 48th bit).
-          // This is where your spec (v2.1) says the BPS bit is.
           if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(1, recordEnd))
           {
-              // Console.WriteLine("[DEBUG] FRN 48 (REF) block entered.");
-              
-              // Read the first octet of the REF
+              // Llegeixo primer el primer octet de REF, per saber com està el bit de BPS
               byte refOctet1 = data[currentByte++];
 
               // Per your spec: (BPS SelH NAV GAO SGV STA TNH MES)
-              bool bpsPresent = (refOctet1 & 0b_1000_0000) != 0; // Check Bit 8
-              // ... other bits ...
-
-              // Check for more REF octets (FX bit)
+              bool bpsPresent = (refOctet1 & 0b1000_0000) != 0;
               bool fx = (refOctet1 & 0x01) != 0;
+
               while (fx && currentByte < recordEnd)
               {
-                  byte nextOctet = data[currentByte++];
-                  fx = (nextOctet & 0x01) != 0;
+	              byte nextOctet = data[currentByte++];
+	              if ((nextOctet & 0b1000_0000) != 0)
+		              bpsPresent = true;
+	              fx = (nextOctet & 0x01) != 0;
               }
-               
-              // --- NOW, decode sub-items based on the bits we found ---
-               
-              // --- 1. Decode Barometric Pressure Setting (I021/090) ---
-              if (bpsPresent)
+
+
+              if (bpsPresent) // Si el bit de BPS està a 1, llegeixo els 2 octets següents (16-13 son palla) / (12-1 són BPS)
               {
-                  // Console.WriteLine("[DEBUG] BPS bit is SET. Decoding value...");
+	              if (CheckBytes(2, recordEnd))
+	              {
+		              ushort raw = (ushort)((data[currentByte] << 8) | data[currentByte + 1]);
+		              currentByte += 2;
+		              ushort bps12bit = (ushort)(raw & 0x0FFF);
+		              double bpsValue = 800 + (bps12bit * 0.1);
 
-                  if (CheckBytes(2, recordEnd))
-                  {
-                      ushort raw = (ushort)((data[currentByte] << 8) | data[currentByte + 1]);
-                      currentByte += 2;
-                      ushort bps12bit = (ushort)(raw & 0x0FFF);
-                      double bpsValue = 800.0 + (bps12bit * 0.1);
-
-                       // This is the "relaxed filter" logic from the previous step
-                       if (bps12bit == 0)
-                       {
-                           record.BarometricPressureSetting = 800.0; 
-                           Console.WriteLine($"[REF/BPS] DECODED: BPS raw=0 -> (<= 800.0 hPa)");
-                       }
-                       else if (bps12bit == 0x0FFF)
-                       {
-                           record.BarometricPressureSetting = 1209.5; 
-                           Console.WriteLine($"[REF/BPS] DECODED: BPS raw=4095 -> (>= 1209.5 hPa)");
-                       }
-                       else
-                       {
-                           // This is a standard decoded value. Accept all of them.
-                           record.BarometricPressureSetting = bpsValue; 
-                           Console.WriteLine($"[BPS_FOUND] Found BPS={bpsValue:F1} | At LAT={record.WGS84_Latitude:F5}, LON={record.WGS84_Longitude:F5}");
-                       }
-                  }
-                  else
-                  {
-                      Console.WriteLine("[REF/BPS] ⚠️ REF indicated BPS, but data ended prematurely.");
-                  }
+		              if (bps12bit == 0)
+		              {
+			              record.BarometricPressureSetting = 800.0;
+			              Console.WriteLine($"[REF/BPS] DECODED: BPS raw=0 -> (<= 800.0 hPa)");
+		              }
+		              else if (bps12bit == 0x0FFF)
+		              {
+			              record.BarometricPressureSetting = 1209.5;
+			              Console.WriteLine($"[REF/BPS] DECODED: BPS raw=4095 -> (>= 1209.5 hPa)");
+		              }
+		              else
+		              {
+			              record.BarometricPressureSetting = bpsValue;
+			              Console.WriteLine(
+				              $"[BPS_FOUND] Found BPS={bpsValue:F1} | At LAT={record.WGS84_Latitude:F5}, LON={record.WGS84_Longitude:F5}");
+		              }
+	              }
+	              else
+	              {
+		              Console.WriteLine("[REF/BPS] ⚠️ REF indicated BPS, but data ended prematurely.");
+	              }
               }
-              // else
-              // {
-              //    Console.WriteLine("[DEBUG] FRN 48 was present, but BPS bit was 0.");
-              // }
           }
-		} // <-- This is the closing brace for DecodeRecord
+		} 
 			
 	    
         

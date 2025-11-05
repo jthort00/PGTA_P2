@@ -130,7 +130,7 @@ namespace AsterixDecoder.Models.CAT021
                 Console.WriteLine($"  - LON: {r.LON:F6}");
                 Console.WriteLine($"  - Mode3/A: {r.Mode3A}");
                 Console.WriteLine($"  - FL: {r.FL}");
-                Console.WriteLine($"  - Real Altitude (ft): {r.Real_Altitude_ft:F0}");
+                Console.WriteLine($"  - Real Altitude (ft): {r.Real_Altitude_ft:F2}");
                 Console.WriteLine($"  - TA: {r.TA}");
                 Console.WriteLine($"  - TI: {r.TI}");
                 Console.WriteLine($"  - BP: {r.BP}");
@@ -155,10 +155,14 @@ namespace AsterixDecoder.Models.CAT021
                     string latStr = r.LAT.ToString("F6", CultureInfo.InvariantCulture);
                     string lonStr = r.LON.ToString("F6", CultureInfo.InvariantCulture);
                     string altStr = r.Real_Altitude_ft.ToString("F0", CultureInfo.InvariantCulture);
+                    string bpStr = r.BP.HasValue 
+                        ? r.BP.Value.ToString("F2", CultureInfo.InvariantCulture) 
+                        : "N/A";
 
                     writer.WriteLine($"{r.CAT};{r.SAC};{r.SIC};{r.Time};{latStr};{lonStr};" +
-                                   $"{r.Mode3A};{r.FL};{altStr};{r.TA};{r.TI};{r.BP};{r.IsOnGround}");
+                                     $"{r.Mode3A};{r.FL};{altStr};{r.TA};{r.TI};{bpStr};{r.IsOnGround}");
                 }
+
             }
 
             //Console.WriteLine($"\nArchivo CSV exportado: {filePath}");

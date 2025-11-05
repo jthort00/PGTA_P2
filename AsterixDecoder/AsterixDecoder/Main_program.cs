@@ -7,6 +7,7 @@ using AsterixDecoder.Models.CAT048;
 using AsterixDecoder.Models.CAT021;
 using MultiCAT6.Utils;
 using AsterixDecoder.Models;
+using System.Linq;
 
 namespace AsterixDecoder
 {
@@ -176,6 +177,8 @@ namespace AsterixDecoder
 
             ShowCAT048Menu(cat048List);
         }
+        
+        
 
         /// <summary>
         /// Procesa solo mensajes CAT021
@@ -216,13 +219,15 @@ namespace AsterixDecoder
                         cat021List.Add(cat021Object);
                         processedCount++;
                     }
+                    
                 }
             }
 
             Console.WriteLine($"✓ Mensajes CAT021 procesados: {cat021Count}");
             Console.WriteLine($"✓ Registros decodificados: {processedCount}");
-
             ShowCAT021Menu(cat021List);
+            
+            
         }
 
         /// <summary>
@@ -315,9 +320,10 @@ namespace AsterixDecoder
                 BarometricPressureSource = rawRecord.BarometricPressureSource,
                 BarometricPressureSetting = rawRecord.BarometricPressureSetting
             };
-
             return new Cat021(rawData, qnh);
         }
+
+
 
         /// <summary>
         /// Menú de opciones para CAT048
