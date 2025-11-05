@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("AsterixDecoder")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b59492414291b896713625275e0d16155176eb13")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+56febad54947710bf75e2d3aa011a85b366e24b1")]
 [assembly: System.Reflection.AssemblyProductAttribute("AsterixDecoder")]
 [assembly: System.Reflection.AssemblyTitleAttribute("AsterixDecoder")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -7,24 +7,25 @@ namespace AsterixDecoder.Models.CAT048
 {
     public class Cat048
     {
-        // Atributos principales
+        // Atributos principales - TODOS NULLABLE
         public string CAT { get; set; }
-        public int SAC { get; set; }
-        public int SIC { get; set; }
+        public int? SAC { get; set; }
+        public int? SIC { get; set; }
         public string Time { get; set; }
         public double? LAT { get; set; }
         public double? LON { get; set; }
         public double? H { get; set; }          
         public double? H_m { get; set; }        
-        public double RHO { get; set; }
-        public double THETA { get; set; }
+        public double? RHO { get; set; }
+        public double? THETA { get; set; }
         public string Mode3A { get; set; }
         public double? FL { get; set; }
         public string TA { get; set; }         
-        public string TI { get; set; }          
+        public string TI { get; set; }
+        public string Stat { get; set; }          
         public double? BP { get; set; }         
         public double? RA { get; set; }        
-        public double TTA { get; set; }          
+        public double? TTA { get; set; }          
         public double? GS { get; set; }         
         public double? TAR { get; set; }        
         public double? TAS { get; set; }        
@@ -36,7 +37,6 @@ namespace AsterixDecoder.Models.CAT048
         public int? TN { get; set; }            
         public double? GSSD { get; set; }       
         public double? HDG2 { get; set; }       
-        public string Stat { get; set; }
         
         // Campos de I048/230 - Communications/ACAS Capability
         public int? COM { get; set; }
@@ -54,8 +54,8 @@ namespace AsterixDecoder.Models.CAT048
         {
             // Inicializar campos básicos
             CAT = "CAT048";
-            SAC = rawData.SAC;
-            SIC = rawData.SIC;
+            SAC = rawData.SAC > 0 ? rawData.SAC : (int?)null;
+            SIC = rawData.SIC > 0 ? rawData.SIC : (int?)null;
 
             // Procesar tiempo
             if (rawData.TimeOfDay.HasValue)
@@ -68,18 +68,25 @@ namespace AsterixDecoder.Models.CAT048
             }
             else
             {
-                Time = "N/A";
+                Time = null;
             }
 
-            // Coordenadas polares
-            RHO = rawData.RhoSlantRange;
-            THETA = rawData.ThetaAzimuth;
+            // Coordenadas polares - solo si son válidas
+            if (rawData.RhoSlantRange > 0)
+            {
+                RHO = rawData.RhoSlantRange;
+            }
+            
+            if (rawData.ThetaAzimuth >= 0)
+            {
+                THETA = rawData.ThetaAzimuth;
+            }
 
             // Convertir coordenadas polares a WGS84
             ConvertPolarToWGS84(rawData, geoUtils, radarPosition);
 
             // Mode 3/A
-            Mode3A = rawData.Mode3ACode ?? "N/A";
+            Mode3A = string.IsNullOrWhiteSpace(rawData.Mode3ACode) ? null : rawData.Mode3ACode;
 
             // Flight Level y altitud corregida
             ProcessFlightLevel(rawData);
@@ -95,18 +102,18 @@ namespace AsterixDecoder.Models.CAT048
 
             if (rawData.VxRaw != 0 || rawData.VyRaw != 0)
             {                
-                GSSD = rawData.VxRaw;
-				HDG2 = rawData.VyRaw;
+                GSSD = rawData.VxRaw != 0 ? rawData.VxRaw : (double?)null;
+                HDG2 = rawData.VyRaw != 0 ? rawData.VyRaw : (double?)null;
             }
 
             // Status
-            Stat = rawData.TargetReportDescriptor ?? "N/A";
+            Stat = string.IsNullOrWhiteSpace(rawData.TargetReportDescriptor) ? null : rawData.TargetReportDescriptor;
 
             // Target Address (TA) - Aircraft Address
-            TA = rawData.AircraftAddress ?? "N/A";
+            TA = string.IsNullOrWhiteSpace(rawData.AircraftAddress) ? null : rawData.AircraftAddress;
 
             // Target ID (TI) - Aircraft Identification
-            TI = rawData.AircraftIdentification ?? "N/A";
+            TI = string.IsNullOrWhiteSpace(rawData.AircraftIdentification) ? null : rawData.AircraftIdentification;
 
             // Track Number
             if (rawData.TrackNumber > 0)
@@ -151,6 +158,13 @@ namespace AsterixDecoder.Models.CAT048
 
         private void ProcessFlightLevel(RawCat048Data rawData)
         {       
+            // Si FL raw es 0, no establecer FL (dejar como null)
+            if (rawData.FlightLevel == 0)
+            {
+                FL = null;
+                return;
+            }
+
             FL = rawData.FlightLevel / 4.0;
             double altitudeFeet = FL.HasValue ? FL.Value * 100 : 0;
 
@@ -164,7 +178,6 @@ namespace AsterixDecoder.Models.CAT048
                     qnhCurrent = bds40.BarometricPressureSetting;
                     BP = qnhCurrent;
                 }
-                
             }
 
             // Aplicar corrección QNH correctamente
@@ -173,15 +186,10 @@ namespace AsterixDecoder.Models.CAT048
                 H = altitudeFeet + (qnhCurrent.Value - QNH_STANDARD) * 30.0;
                 H_m = H * GeoUtils.FEET2METERS;
             }
-            else
+            else if (altitudeFeet != 0)
             {
                 H = altitudeFeet;
                 H_m = H * GeoUtils.FEET2METERS;
-            }
-			// Si FL raw es 0, no establecer FL (dejar como null)
-            if (rawData.FlightLevel == 0)
-            {
-                FL = null;
             }
         }
 
@@ -211,7 +219,7 @@ namespace AsterixDecoder.Models.CAT048
 
             // BDS 4.0 - Selected Vertical Intention
             var bds40 = rawData.ModeSDataBlocks.FirstOrDefault(b => b.BDSRegister == 0x40);
-            if (bds40 != null)
+            if (bds40 != null && bds40.BarometricPressureSetting > 0)
             {
                 BP = bds40.BarometricPressureSetting;
             }
@@ -226,16 +234,21 @@ namespace AsterixDecoder.Models.CAT048
                     RA = -90 + Math.Abs(bds50.RollAngle);
                 }
 
-                TAR = bds50.TrackAngleRate;
+                if (bds50.TrackAngleRate != 0)
+                {
+                    TAR = bds50.TrackAngleRate;
+                }
 
                 // TAS: 0 no es válido, debe ser > 0
                 if (bds50.TrueAirspeed > 0)
                     TAS = bds50.TrueAirspeed;
 
                 // GS desde BDS 5.0: 0 es válido
-                GS = bds50.GroundSpeed;
+                if (bds50.GroundSpeed >= 0)
+                    GS = bds50.GroundSpeed;
 
-                TTA = bds50.TrueTrackAngle;
+                if (bds50.TrueTrackAngle != 0)
+                    TTA = bds50.TrueTrackAngle;
             }
 
             // BDS 6.0 - Heading and Speed Report
@@ -244,7 +257,8 @@ namespace AsterixDecoder.Models.CAT048
             {
                 // Magnetic Heading: 0-360° es válido (norte magnético = 0°)
                 // LSB = 90/512 = 0.17578125° según BDS 6.0
-                HDG = bds60.MagneticHeading;
+                if (bds60.MagneticHeading >= 0)
+                    HDG = bds60.MagneticHeading;
 
                 // IAS: 0 no es válido, debe ser > 0
                 if (bds60.IndicatedAirspeed > 0)
@@ -255,16 +269,26 @@ namespace AsterixDecoder.Models.CAT048
                     MACH = bds60.MachNumber;
                 
                 // BAR e IVV pueden ser negativos (descenso), 0 o positivos
-                BAR = bds60.BarometricAltitudeRate;
-                IVV = bds60.InertialVerticalVelocity;
-
+                if (bds60.BarometricAltitudeRate != 0)
+                    BAR = bds60.BarometricAltitudeRate;
                 
+                if (bds60.InertialVerticalVelocity != 0)
+                    IVV = bds60.InertialVerticalVelocity;
             }
         }
 
         public override string ToString()
         {
-            return $"CAT048 [SAC:{SAC} SIC:{SIC}] Time:{Time} LAT:{LAT:F6} LON:{LON:F6} FL:{FL} TA:{TA} TI:{TI}";
+            var inv = System.Globalization.CultureInfo.InvariantCulture;
+            string sac = SAC.HasValue ? SAC.Value.ToString(inv) : "N/A";
+            string sic = SIC.HasValue ? SIC.Value.ToString(inv) : "N/A";
+            string lat = LAT.HasValue ? LAT.Value.ToString("F6", inv) : "N/A";
+            string lon = LON.HasValue ? LON.Value.ToString("F6", inv) : "N/A";
+            string fl = FL.HasValue ? FL.Value.ToString(inv) : "N/A";
+            string ta = string.IsNullOrWhiteSpace(TA) ? "N/A" : TA;
+            string ti = string.IsNullOrWhiteSpace(TI) ? "N/A" : TI;
+            string time = string.IsNullOrWhiteSpace(Time) ? "N/A" : Time;
+            return $"CAT048 [SAC:{sac} SIC:{sic}] Time:{time} LAT:{lat} LON:{lon} FL:{fl} TA:{ta} TI:{ti}";
         }
     }
 }

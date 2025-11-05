@@ -68,7 +68,7 @@ namespace AsterixDecoder.Models.CAT048
         /// </summary>
         public List<string> GetUniqueAircraftAddresses()
         {
-            return records.Where(r => r.TA != "N/A")
+            return records.Where(r => !string.IsNullOrWhiteSpace(r.TA))
                          .Select(r => r.TA)
                          .Distinct()
                          .ToList();
@@ -79,7 +79,7 @@ namespace AsterixDecoder.Models.CAT048
         /// </summary>
         public List<string> GetUniqueTargetIds()
         {
-            return records.Where(r => r.TI != "N/A")
+            return records.Where(r => !string.IsNullOrWhiteSpace(r.TI))
                          .Select(r => r.TI)
                          .Distinct()
                          .ToList();
@@ -102,35 +102,35 @@ namespace AsterixDecoder.Models.CAT048
             {
                 var r = records[i];
                 Console.WriteLine($"* Item {i + 1}:");
-                Console.WriteLine($"  - CAT: {r.CAT}");
-                Console.WriteLine($"  - SAC: {r.SAC}");
-                Console.WriteLine($"  - SIC: {r.SIC}");
-                Console.WriteLine($"  - Time: {r.Time}");
-                Console.WriteLine($"  - LAT: {FormatValue(r.LAT, "F6")}");
-                Console.WriteLine($"  - LON: {FormatValue(r.LON, "F6")}");
-                Console.WriteLine($"  - H (QNH corr.): {FormatValue(r.H_m, "F2")} m");
-                Console.WriteLine($"  - H(m): {FormatValue(r.H, "F0")} ft");
-                Console.WriteLine($"  - RHO: {FormatValue(r.RHO, "F3")} NM");
-                Console.WriteLine($"  - THETA: {FormatValue(r.THETA, "F2")} deg");
-                Console.WriteLine($"  - Mode3/A: {r.Mode3A}");
-                Console.WriteLine($"  - FL: {FormatValue(r.FL, "F0")}");
-                Console.WriteLine($"  - TA (Target Address): {r.TA}");
-                Console.WriteLine($"  - TI (Target ID): {r.TI}");
-                Console.WriteLine($"  - BP (Baro Press): {FormatValue(r.BP, "F2")} hPa");
-                Console.WriteLine($"  - RA (Roll angle): {FormatValue(r.RA, "F2")}");
-                Console.WriteLine($"  - TTA: {r.TTA}");
-                Console.WriteLine($"  - GS (calc): {FormatValue(r.GS, "F3")} kt");
-                Console.WriteLine($"  - TAR (Track Rate): {FormatValue(r.TAR, "F3")} deg/s");
-                Console.WriteLine($"  - TAS: {FormatValue(r.TAS, "F3")} kt");
-                Console.WriteLine($"  - HDG: {FormatValue(r.HDG, "F3")} deg");
-                Console.WriteLine($"  - IAS: {FormatValue(r.IAS, "F3")} kt");
-                Console.WriteLine($"  - MACH: {FormatValue(r.MACH, "F3")}");
-                Console.WriteLine($"  - BAR (Alt Rate): {FormatValue(r.BAR, "F3")} ft/min");
-                Console.WriteLine($"  - IVV (Vert Vel): {FormatValue(r.IVV, "F3")} ft/min");
-                Console.WriteLine($"  - TN (Track#): {(r.TN.HasValue ? r.TN.Value.ToString() : "N/A")}");
-                Console.WriteLine($"  - GSSD (BDS): {FormatValue(r.GSSD, "F3")} kt");
-                Console.WriteLine($"  - HDG2 (0-360): {FormatValue(r.HDG2, "F3")} deg");
-                Console.WriteLine($"  - Stat: {r.Stat}");
+                Console.WriteLine($"  - CAT: {FormatStringValue(r.CAT)}");
+                Console.WriteLine($"  - SAC: {FormatIntValue(r.SAC)}");
+                Console.WriteLine($"  - SIC: {FormatIntValue(r.SIC)}");
+                Console.WriteLine($"  - Time: {FormatStringValue(r.Time)}");
+                Console.WriteLine($"  - LAT: {FormatDoubleValue(r.LAT, "F6")}");
+                Console.WriteLine($"  - LON: {FormatDoubleValue(r.LON, "F6")}");
+                Console.WriteLine($"  - H (QNH corr.): {FormatDoubleValue(r.H_m, "F2")} m");
+                Console.WriteLine($"  - H(ft): {FormatDoubleValue(r.H, "F0")} ft");
+                Console.WriteLine($"  - RHO: {FormatDoubleValue(r.RHO, "F3")} NM");
+                Console.WriteLine($"  - THETA: {FormatDoubleValue(r.THETA, "F2")} deg");
+                Console.WriteLine($"  - Mode3/A: {FormatStringValue(r.Mode3A)}");
+                Console.WriteLine($"  - FL: {FormatDoubleValue(r.FL, "F0")}");
+                Console.WriteLine($"  - TA (Target Address): {FormatStringValue(r.TA)}");
+                Console.WriteLine($"  - TI (Target ID): {FormatStringValue(r.TI)}");
+                Console.WriteLine($"  - BP (Baro Press): {FormatDoubleValue(r.BP, "F2")} hPa");
+                Console.WriteLine($"  - RA (Roll angle): {FormatDoubleValue(r.RA, "F2")}");
+                Console.WriteLine($"  - TTA: {FormatDoubleValue(r.TTA, "F3")} deg");
+                Console.WriteLine($"  - GS: {FormatDoubleValue(r.GS, "F3")} kt");
+                Console.WriteLine($"  - TAR: {FormatDoubleValue(r.TAR, "F3")} deg/s");
+                Console.WriteLine($"  - TAS: {FormatDoubleValue(r.TAS, "F3")} kt");
+                Console.WriteLine($"  - HDG: {FormatDoubleValue(r.HDG, "F3")} deg");
+                Console.WriteLine($"  - IAS: {FormatDoubleValue(r.IAS, "F3")} kt");
+                Console.WriteLine($"  - MACH: {FormatDoubleValue(r.MACH, "F3")}" );
+                Console.WriteLine($"  - BAR: {FormatDoubleValue(r.BAR, "F3")} ft/min");
+                Console.WriteLine($"  - IVV: {FormatDoubleValue(r.IVV, "F3")} ft/min");
+                Console.WriteLine($"  - Track Number: {FormatIntValue(r.TN)}");
+                Console.WriteLine($"  - Ground Speed (kt): {FormatDoubleValue(r.GSSD, "F3")} kt");
+                Console.WriteLine($"  - Heading: {FormatDoubleValue(r.HDG2, "F3")} deg");
+                Console.WriteLine($"  - Stat: {FormatStringValue(r.Stat)}");
                 Console.WriteLine();
             }
         }
@@ -175,12 +175,13 @@ namespace AsterixDecoder.Models.CAT048
 
         /// <summary>
         /// Exporta los registros a formato CSV con campos ordenados según especificación
+        /// Todos los valores nulos o vacíos se muestran como "N/A"
         /// </summary>
         public string ExportToCSV()
         {
             var csv = new System.Text.StringBuilder();
             
-            // Header - Nuevas columnas según especificación
+            // Header - Columnas según especificación
             csv.AppendLine("CAT\tSAC\tSIC\tTime\tLat\tLon\tH_wgs\th_ft\tRHO\tTHETA\tMode_3A\tFlight_level\tModeC_corrected\tTarget_address\tTarget_identification\tMode_S\tBP\tRA\tTTA\tGS\tTAR\tTAS\tHDG\tIAS\tMACH\tBAR\tIVV\tTrack_number\tGround_speedkt\tHeading\tSAT230");
             
             // Data rows
@@ -193,37 +194,37 @@ namespace AsterixDecoder.Models.CAT048
                 string sat230 = BuildSAT230Field(r);
                 
                 csv.AppendLine(
-                    $"{r.CAT}\t" +
-                    $"{r.SAC}\t" +
-                    $"{r.SIC}\t" +
-                    $"{r.Time}\t" +
-                    $"{FormatCSVInvariant(r.LAT, "F8")}\t" +      // Lat
-                    $"{FormatCSVInvariant(r.LON, "F8")}\t" +      // Lon
-                    $"{FormatCSVInvariant(r.H_m, "F14")}\t" +     // H_wgs (metros WGS84)
-                    $"{FormatCSVInvariant(r.H, "F14")}\t" +       // h_ft (pies)
-                    $"{FormatDoubleInvariant(r.RHO, "F6")}\t" +   // RHO
-                    $"{FormatDoubleInvariant(r.THETA, "F6")}\t" + // THETA
-                    $"{r.Mode3A}\t" +                             // Mode_3A
-                    $"{FormatCSVInvariant(r.FL, "F3", "")}\t" +   // Flight_level
-                    $"{FormatCSVInvariant(r.H, "F3", "")}\t" +    // ModeC_corrected (H corregido con QNH)
-                    $"{r.TA}\t" +                                 // Target_address
-                    $"{r.TI}\t" +                                 // Target_identification
-                    $"{modeS}\t" +                                // Mode_S (BDS registers)
-                    $"{FormatCSVInvariant(r.BP, "F3", "")}\t" +   // BP
-                    $"{FormatCSVInvariant(r.RA, "F3")}\t" +                                 // RA
-                    $"{FormatCSVInvariant(r.TTA, "F3")}\t" +// TTA (Roll Angle)
-                    $"{FormatCSVInvariant(r.GS, "F3", "")}\t" +   // GS
-                    $"{FormatCSVInvariant(r.TAR, "F3", "")}\t" +  // TAR
-                    $"{FormatCSVInvariant(r.TAS, "F3", "")}\t" +  // TAS
-                    $"{FormatCSVInvariant(r.HDG, "F6")}\t" +      // HDG
-                    $"{FormatCSVInvariant(r.IAS, "F3", "")}\t" +  // IAS
-                    $"{FormatCSVInvariant(r.MACH, "F3")}\t" +     // MACH
-                    $"{FormatCSVInvariant(r.BAR, "F3", "")}\t" +  // BAR
-                    $"{FormatCSVInvariant(r.IVV, "F3", "")}\t" +  // IVV
-                    $"{FormatCSVInvariant(r.TN, "F3", "")}\t" + // Track_number
-                    $"{FormatCSVInvariant(r.GSSD, "F3", "")}\t" + // Ground_speedkt (BDS 5.0)
-                    $"{FormatCSVInvariant(r.HDG2, "F4")}\t" +     // Heading (0-360)
-                    $"{sat230}");                                  // SAT230
+                    $"{FormatStringValue(r.CAT)}\t" +
+                    $"{FormatIntValue(r.SAC)}\t" +
+                    $"{FormatIntValue(r.SIC)}\t" +
+                    $"{FormatStringValue(r.Time)}\t" +
+                    $"{FormatDoubleValue(r.LAT, "F8")}\t" +           // Lat
+                    $"{FormatDoubleValue(r.LON, "F8")}\t" +           // Lon
+                    $"{FormatDoubleValue(r.H_m, "F14")}\t" +          // H_wgs (metros WGS84)
+                    $"{FormatDoubleValue(r.H, "F14")}\t" +            // h_ft (pies)
+                    $"{FormatDoubleValue(r.RHO, "F6")}\t" +           // RHO
+                    $"{FormatDoubleValue(r.THETA, "F6")}\t" +         // THETA
+                    $"{FormatStringValue(r.Mode3A)}\t" +               // Mode_3A
+                    $"{FormatDoubleValue(r.FL, "F3")}\t" +            // Flight_level
+                    $"{FormatDoubleValue(r.H, "F3")}\t" +             // ModeC_corrected
+                    $"{FormatStringValue(r.TA)}\t" +                    // Target_address
+                    $"{FormatStringValue(r.TI)}\t" +                    // Target_identification
+                    $"{FormatStringValue(modeS)}\t" +                   // Mode_S (BDS registers)
+                    $"{FormatDoubleValue(r.BP, "F3")}\t" +            // BP
+                    $"{FormatDoubleValue(r.RA, "F3")}\t" +            // RA
+                    $"{FormatDoubleValue(r.TTA, "F3")}\t" +           // TTA
+                    $"{FormatDoubleValue(r.GS, "F3")}\t" +            // GS
+                    $"{FormatDoubleValue(r.TAR, "F3")}\t" +           // TAR
+                    $"{FormatDoubleValue(r.TAS, "F3")}\t" +           // TAS
+                    $"{FormatDoubleValue(r.HDG, "F6")}\t" +           // HDG
+                    $"{FormatDoubleValue(r.IAS, "F3")}\t" +           // IAS
+                    $"{FormatDoubleValue(r.MACH, "F3")}\t" +          // MACH
+                    $"{FormatDoubleValue(r.BAR, "F3")}\t" +           // BAR
+                    $"{FormatDoubleValue(r.IVV, "F3")}\t" +           // IVV
+                    $"{FormatIntValue(r.TN)}\t" +                       // Track_number
+                    $"{FormatDoubleValue(r.GSSD, "F3")}\t" +          // Ground_speedkt
+                    $"{FormatDoubleValue(r.HDG2, "F4")}\t" +          // Heading
+                    $"{FormatStringValue(sat230)}");                     // SAT230
             }
             
             return csv.ToString();
@@ -275,6 +276,45 @@ namespace AsterixDecoder.Models.CAT048
         private string FormatDoubleInvariant(double value, string format)
         {
             return value.ToString(format, System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>
+        /// Formatea un valor double nullable - devuelve "N/A" si es null
+        /// </summary>
+        private string FormatDoubleValue(double? value, string format = "F6")
+        {
+            if (!value.HasValue)
+                return "N/A";
+            
+            return value.Value.ToString(format, System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        // Sobrecarga para valores no-nullable
+        private string FormatDoubleValue(double value, string format = "F6")
+        {
+            return value.ToString(format, System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>
+        /// Formatea un valor int nullable - devuelve "N/A" si es null
+        /// </summary>
+        private string FormatIntValue(int? value)
+        {
+            if (!value.HasValue)
+                return "N/A";
+            
+            return value.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>
+        /// Formatea un valor string - devuelve "N/A" si es null, vacío o "N/A"
+        /// </summary>
+        private string FormatStringValue(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value) || value == "N/A")
+                return "N/A";
+            
+            return value;
         }
     }
 }

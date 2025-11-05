@@ -6,7 +6,7 @@ using System.IO;
 using System.Linq;
 
 
-namespace AsterixDecoder.Models
+namespace AsterixDecoder.Models.CAT021
 {
     /// <summary>
     /// Decodificador ASTERIX CAT021 
@@ -649,41 +649,6 @@ namespace AsterixDecoder.Models
         }
 
 
-
-		public static void WriteCsv(string filePath, List<Cat021Record> records)
-		{
-			using (var writer = new StreamWriter(filePath, false, Encoding.UTF8))
-			{
-				writer.WriteLine("CAT;SAC;SIC;Time;LAT;LON;Mode3A_Code;FL;TA;TI;BP");
-				foreach (var r in records)
-				{
-					string timeStr = r.Time_Reception_Position.HasValue
-						? r.Time_Reception_Position.Value.ToString(@"hh\:mm\:ss")
-						: "--:--:--";
-
-					string ta = r.Target_Address ?? "------";
-					string ti = r.Target_Identification ?? "--------";
-					string bp = r.TargetReportDescriptor ?? "";
-
-					string sac = "--";
-					string sic = "--";
-					if (!string.IsNullOrEmpty(r.DataSourceIdentifier) && r.DataSourceIdentifier.Contains("SAC:"))
-					{
-						var parts = r.DataSourceIdentifier.Split(' ');
-						if (parts.Length == 2)
-						{
-							sac = parts[0].Replace("SAC:", "");
-							sic = parts[1].Replace("SIC:", "");
-						}
-					}
-					string latStr = r.WGS84_Latitude.ToString("F6", CultureInfo.InvariantCulture);
-					string lonStr = r.WGS84_Longitude.ToString("F6", CultureInfo.InvariantCulture);
-
-					writer.WriteLine($"021;{sac};{sic};{timeStr};{latStr};{lonStr};{r.Mode3A_Code};{r.Flight_Level};{ta};{ti};{bp}");
-				}
-
-			}
-		}
     }
 }
 
