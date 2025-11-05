@@ -6,6 +6,7 @@ using AsterixDecoder.IO;
 using AsterixDecoder.Models.CAT048;
 using AsterixDecoder.Models.CAT021;
 using MultiCAT6.Utils;
+using AsterixDecoder.Models;
 
 namespace AsterixDecoder
 {
