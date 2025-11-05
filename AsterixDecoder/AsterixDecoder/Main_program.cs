@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 using AsterixDecoder.IO;
-using AsterixDecoder.Models;
+using AsterixDecoder.Models.CAT048;
+using AsterixDecoder.Models.CAT021;
 using MultiCAT6.Utils;
 
 namespace AsterixDecoder
@@ -16,346 +18,516 @@ namespace AsterixDecoder
             27.257                                          // Elevación terreno (2.007m) + altura antena (25.25m)
         );
 
-        static void Maimn(string[] args)
+        enum DecodingMode
+        {
+            CAT048,
+            CAT021,
+            Both
+        }
+
+        static void Main(string[] args)
         {
             try
             {
-                // Inicializar GeoUtils con el centro de proyección en el radar BCN
+                Console.WriteLine("╔════════════════════════════════════════╗");
+                Console.WriteLine("║   DECODIFICADOR ASTERIX MULTI-CAT      ║");
+                Console.WriteLine("╚════════════════════════════════════════╝\n");
+
+                // Selección de modo de decodificación
+                DecodingMode mode = SelectDecodingMode();
+                if (mode == (DecodingMode)(-1)) // Usuario canceló
+                {
+                    Console.WriteLine("Operación cancelada.");
+                    return;
+                }
+
+                // Determinar archivo a utilizar
+                string filename = GetFilenameForMode(mode);
+                Console.WriteLine($"\n[INFO] Archivo seleccionado: {filename}");
+
+                // Inicializar sistema de coordenadas (necesario para CAT048)
+                Console.WriteLine("\n[1/5] Inicializando sistema de coordenadas...");
                 GeoUtils geoUtils = new GeoUtils(0.081819190843, 6378137.0, RadarBCN);
+                Console.WriteLine("✓ GeoUtils inicializado correctamente");
 
-                // Leer el archivo binario
-                var reader = new BinaryFileReader("datos_asterix_radar.ast");
+                // Leer archivo binario
+                Console.WriteLine($"\n[2/5] Leyendo archivo ASTERIX binario: {filename}...");
+                var reader = new BinaryFileReader(filename);
                 var messages = reader.ReadMessages();
+                Console.WriteLine($"✓ Archivo leído: {messages.Count} mensajes encontrados");
 
-                Console.WriteLine("Procesando archivo ASTERIX CAT048...\n");
-
-                var allCat048Records = new List<Cat048Decoder.Cat048Record>();
-
-                // Procesar todos los mensajes CAT048
-                foreach (var message in messages)
+                // Procesar según el modo
+                Console.WriteLine("\n[3/5] Decodificando mensajes...");
+                
+                switch (mode)
                 {
-                    byte cat = message[0];
-
-                    if (cat == 48)
-                    {
-                        var decoder = new Cat048Decoder(message);
-                        var records = decoder.Decode();
-                        allCat048Records.AddRange(records);
-                    }
+                    case DecodingMode.CAT048:
+                        ProcessCAT048Only(messages, geoUtils);
+                        break;
+                    
+                    case DecodingMode.CAT021:
+                        ProcessCAT021Only(messages);
+                        break;
+                    
+                    case DecodingMode.Both:
+                        ProcessBothCategories(messages, geoUtils);
+                        break;
                 }
 
-                // Mostrar CAT048 en formato tabular
-                if (allCat048Records.Count > 0)
-                {
-                    Console.WriteLine("=== ASTERIX CAT048 RECORDS ===\n");
-                    PrintCat048Table(allCat048Records, geoUtils);
-
-                    Console.WriteLine($"\n\nTotal CAT048 records: {allCat048Records.Count}");
-                }
-                else
-                {
-                    Console.WriteLine("No se encontraron registros CAT048 en el archivo.");
-                }
+                Console.WriteLine("\n✓ Decodificación completada con éxito");
+            }
+            catch (FileNotFoundException ex)
+            {
+                Console.WriteLine($"\n❌ ERROR: Archivo no encontrado");
+                Console.WriteLine($"No se pudo encontrar el archivo: {ex.Message}");
+                Console.WriteLine("Asegúrate de que el archivo existe en el directorio de ejecución.");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"\nERROR: {ex.Message}");
-                Console.WriteLine($"Stack Trace:\n{ex.StackTrace}");
+                Console.WriteLine($"\n❌ ERROR CRÍTICO");
+                Console.WriteLine($"Mensaje: {ex.Message}");
+                Console.WriteLine($"\nDetalles técnicos:");
+                Console.WriteLine(ex.StackTrace);
             }
 
+            Console.WriteLine("\n\nPresiona cualquier tecla para salir...");
+            Console.ReadKey();
+        }
 
-            static void PrintCat048Table(List<Cat048Decoder.Cat048Record> records, GeoUtils geoUtils)
+        /// <summary>
+        /// Permite al usuario seleccionar el modo de decodificación
+        /// </summary>
+        static DecodingMode SelectDecodingMode()
+        {
+            Console.WriteLine("Selecciona la categoría ASTERIX a decodificar:\n");
+            Console.WriteLine("  1 - CAT048 (Radar SMR)");
+            Console.WriteLine("  2 - CAT021 (ADS-B)");
+            Console.WriteLine("  3 - Ambas categorías (CAT048 + CAT021)");
+            Console.WriteLine("  0 - Salir\n");
+            Console.Write("Opción: ");
+
+            string input = Console.ReadLine();
+
+            switch (input)
             {
-                // Encabezados basados en la imagen
-                var headers = new[]
+                case "1":
+                    return DecodingMode.CAT048;
+                case "2":
+                    return DecodingMode.CAT021;
+                case "3":
+                    return DecodingMode.Both;
+                case "0":
+                    return (DecodingMode)(-1);
+                default:
+                    Console.WriteLine("Opción no válida. Seleccionando CAT048 por defecto.");
+                    return DecodingMode.CAT048;
+            }
+        }
+
+        /// <summary>
+        /// Devuelve el nombre del archivo según el modo seleccionado
+        /// </summary>
+        static string GetFilenameForMode(DecodingMode mode)
+        {
+            switch (mode)
+            {
+                case DecodingMode.CAT048:
+                    return "datos_asterix_radar.ast";
+                case DecodingMode.CAT021:
+                    return "datos_asterix_adsb.ast";
+                case DecodingMode.Both:
+                    return "datos_asterix_combinado.ast";
+                default:
+                    return "datos_asterix_radar.ast";
+            }
+        }
+
+        /// <summary>
+        /// Procesa solo mensajes CAT048
+        /// </summary>
+        static void ProcessCAT048Only(List<byte[]> messages, GeoUtils geoUtils)
+        {
+            var cat048List = new Cat048List();
+            int processedCount = 0;
+            int cat048Count = 0;
+
+            foreach (var message in messages)
+            {
+                byte cat = message[0];
+
+                if (cat == 48)
                 {
-                "CAT", "SAC", "SIC", "Time", "LAT", "LON", "H", "H(m)",
-                "RHO", "THETA", "Mode3/A", "FL", "TA", "TI", "BP", "RA",
-                "ITA", "GS", "TAR", "TAS", "HDG", "IAS", "MACH", "BAR",
-                "IVV", "TN", "GSSD", "HDG2", "Stat", "AD"
+                    cat048Count++;
+                    var decoder = new Cat048Decoder(message);
+                    var rawRecords = decoder.Decode();
+
+                    foreach (var rawRecord in rawRecords)
+                    {
+                        var cat048Object = new Cat048(rawRecord, geoUtils, RadarBCN);
+                        cat048List.Add(cat048Object);
+                        processedCount++;
+                    }
+                }
+            }
+
+            Console.WriteLine($"✓ Mensajes CAT048 procesados: {cat048Count}");
+            Console.WriteLine($"✓ Registros decodificados: {processedCount}");
+
+            ShowCAT048Menu(cat048List);
+        }
+
+        /// <summary>
+        /// Procesa solo mensajes CAT021
+        /// </summary>
+        static void ProcessCAT021Only(List<byte[]> messages)
+        {
+            var cat021List = new Cat021List();
+            int processedCount = 0;
+            int cat021Count = 0;
+            double qnh = 1013.25; // QNH por defecto
+
+            // Preguntar por QNH
+            Console.Write("\n¿Deseas especificar un QNH? (S/N, por defecto 1013.25 hPa): ");
+            string qnhInput = Console.ReadLine();
+            if (qnhInput?.ToUpper() == "S")
+            {
+                Console.Write("Introduce el valor de QNH (hPa): ");
+                if (double.TryParse(Console.ReadLine(), out double customQnh))
+                {
+                    qnh = customQnh;
+                    Console.WriteLine($"✓ Usando QNH = {qnh} hPa");
+                }
+            }
+
+            foreach (var message in messages)
+            {
+                byte cat = message[0];
+
+                if (cat == 21)
+                {
+                    cat021Count++;
+                    var decoder = new Cat021Decoder(message, qnh);
+                    var rawRecords = decoder.Decode();
+
+                    foreach (var rawRecord in rawRecords)
+                    {
+                        var cat021Object = ConvertToCAT021(rawRecord, qnh);
+                        cat021List.Add(cat021Object);
+                        processedCount++;
+                    }
+                }
+            }
+
+            Console.WriteLine($"✓ Mensajes CAT021 procesados: {cat021Count}");
+            Console.WriteLine($"✓ Registros decodificados: {processedCount}");
+
+            ShowCAT021Menu(cat021List);
+        }
+
+        /// <summary>
+        /// Procesa ambas categorías (CAT048 y CAT021)
+        /// </summary>
+        static void ProcessBothCategories(List<byte[]> messages, GeoUtils geoUtils)
+        {
+            var cat048List = new Cat048List();
+            var cat021List = new Cat021List();
+            
+            int cat048Count = 0;
+            int cat021Count = 0;
+            int cat048Records = 0;
+            int cat021Records = 0;
+            double qnh = 1013.25;
+
+            // Preguntar por QNH para CAT021
+            Console.Write("\n¿Deseas especificar un QNH para CAT021? (S/N, por defecto 1013.25 hPa): ");
+            string qnhInput = Console.ReadLine();
+            if (qnhInput?.ToUpper() == "S")
+            {
+                Console.Write("Introduce el valor de QNH (hPa): ");
+                if (double.TryParse(Console.ReadLine(), out double customQnh))
+                {
+                    qnh = customQnh;
+                    Console.WriteLine($"✓ Usando QNH = {qnh} hPa");
+                }
+            }
+
+            // Procesar cada mensaje identificando su categoría
+            foreach (var message in messages)
+            {
+                if (message.Length < 1) continue;
+                
+                byte cat = message[0];
+
+                if (cat == 48)
+                {
+                    // Procesar CAT048
+                    cat048Count++;
+                    var decoder = new Cat048Decoder(message);
+                    var rawRecords = decoder.Decode();
+
+                    foreach (var rawRecord in rawRecords)
+                    {
+                        var cat048Object = new Cat048(rawRecord, geoUtils, RadarBCN);
+                        cat048List.Add(cat048Object);
+                        cat048Records++;
+                    }
+                }
+                else if (cat == 21)
+                {
+                    // Procesar CAT021
+                    cat021Count++;
+                    var decoder = new Cat021Decoder(message, qnh);
+                    var rawRecords = decoder.Decode();
+
+                    foreach (var rawRecord in rawRecords)
+                    {
+                        var cat021Object = ConvertToCAT021(rawRecord, qnh);
+                        cat021List.Add(cat021Object);
+                        cat021Records++;
+                    }
+                }
+            }
+
+            Console.WriteLine($"\n✓ Mensajes CAT048 procesados: {cat048Count} ({cat048Records} registros)");
+            Console.WriteLine($"✓ Mensajes CAT021 procesados: {cat021Count} ({cat021Records} registros)");
+
+            ShowBothCategoriesMenu(cat048List, cat021List);
+        }
+
+        /// <summary>
+        /// Convierte un Cat021Record a objeto Cat021
+        /// </summary>
+        static Cat021 ConvertToCAT021(Cat021Decoder.Cat021Record rawRecord, double qnh)
+        {
+            var rawData = new RawCat021Data
+            {
+                SAC = int.Parse(rawRecord.DataSourceIdentifier?.Split(':')[1].Split(' ')[0] ?? "0"),
+                SIC = int.Parse(rawRecord.DataSourceIdentifier?.Split(':')[2] ?? "0"),
+                TargetReportDescriptor = rawRecord.TargetReportDescriptor,
+                WGS84_Latitude = rawRecord.WGS84_Latitude,
+                WGS84_Longitude = rawRecord.WGS84_Longitude,
+                Target_Address = rawRecord.Target_Address,
+                Time_Reception_Position = rawRecord.Time_Reception_Position,
+                Mode3A_Code = rawRecord.Mode3A_Code,
+                FlightLevel_Raw = rawRecord.Flight_Level * 4,
+                Target_Identification = rawRecord.Target_Identification,
+                BarometricPressureSource = rawRecord.BarometricPressureSource,
+                BarometricPressureSetting = rawRecord.BarometricPressureSetting
             };
 
-                // Imprimir encabezados
-                Console.Write("| ");
-                foreach (var h in headers)
-                {
-                    Console.Write($"{h,-10} | ");
-                }
-                Console.WriteLine();
+            return new Cat021(rawData, qnh);
+        }
 
-                // Línea separadora
-                Console.Write("|-");
-                foreach (var h in headers)
-                {
-                    Console.Write(new string('-', 10) + "-|-");
-                }
-                Console.WriteLine();
+        /// <summary>
+        /// Menú de opciones para CAT048
+        /// </summary>
+        static void ShowCAT048Menu(Cat048List cat048List)
+        {
+            Console.WriteLine("\n[4/5] Generando estadísticas CAT048...");
+            if (cat048List.Count > 0)
+            {
+                cat048List.PrintSummary();
 
-                // Imprimir cada registro
-                int rowNum = 1;
-                foreach (var record in records)
-                {
-                    Console.Write("| ");
+                var uniqueAddresses = cat048List.GetUniqueAircraftAddresses();
+                Console.WriteLine($"\n✓ Total aeronaves únicas: {uniqueAddresses.Count}");
+            }
 
-                    // CAT
-                    Console.Write($"{"CAT048",-10} | ");
+            Console.WriteLine("\n[5/5] Opciones de salida:");
+            Console.WriteLine("  1 - Mostrar todos los registros detallados");
+            Console.WriteLine("  2 - Exportar a CSV");
+            Console.WriteLine("  3 - Mostrar registros de una aeronave específica");
+            Console.WriteLine("  4 - Salir");
+            Console.Write("\nSelecciona una opción: ");
 
-                    // SAC, SIC
-                    var sac = "N/A";
-                    var sic = "N/A";
-                    if (!string.IsNullOrEmpty(record.DataSourceIdentifier))
+            ProcessCAT048MenuOption(Console.ReadLine(), cat048List);
+        }
+
+        /// <summary>
+        /// Menú de opciones para CAT021
+        /// </summary>
+        static void ShowCAT021Menu(Cat021List cat021List)
+        {
+            Console.WriteLine("\n[4/5] Generando estadísticas CAT021...");
+            if (cat021List.Count > 0)
+            {
+                cat021List.PrintStatistics();
+            }
+
+            Console.WriteLine("\n[5/5] Opciones de salida:");
+            Console.WriteLine("  1 - Mostrar todos los registros detallados");
+            Console.WriteLine("  2 - Exportar a CSV");
+            Console.WriteLine("  3 - Mostrar registros válidos (airborne + FIR BCN)");
+            Console.WriteLine("  4 - Salir");
+            Console.Write("\nSelecciona una opción: ");
+
+            ProcessCAT021MenuOption(Console.ReadLine(), cat021List);
+        }
+
+        /// <summary>
+        /// Menú de opciones para ambas categorías
+        /// </summary>
+        static void ShowBothCategoriesMenu(Cat048List cat048List, Cat021List cat021List)
+        {
+            Console.WriteLine("\n[4/5] Generando estadísticas combinadas...");
+            
+            Console.WriteLine("\n--- Estadísticas CAT048 ---");
+            if (cat048List.Count > 0)
+            {
+                cat048List.PrintSummary();
+            }
+
+            Console.WriteLine("\n--- Estadísticas CAT021 ---");
+            if (cat021List.Count > 0)
+            {
+                cat021List.PrintStatistics();
+            }
+
+            Console.WriteLine("\n[5/5] Opciones de salida:");
+            Console.WriteLine("  1 - Exportar CAT048 a CSV");
+            Console.WriteLine("  2 - Exportar CAT021 a CSV");
+            Console.WriteLine("  3 - Exportar ambas categorías a CSV");
+            Console.WriteLine("  4 - Mostrar estadísticas completas");
+            Console.WriteLine("  5 - Salir");
+            Console.Write("\nSelecciona una opción: ");
+
+            ProcessBothCategoriesMenuOption(Console.ReadLine(), cat048List, cat021List);
+        }
+
+        /// <summary>
+        /// Procesa la opción del menú CAT048
+        /// </summary>
+        static void ProcessCAT048MenuOption(string option, Cat048List cat048List)
+        {
+            switch (option)
+            {
+                case "1":
+                    cat048List.PrintAll();
+                    break;
+
+                case "2":
+                    string csvContent = cat048List.ExportToCSV();
+                    string filename = $"cat048_export_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+                    File.WriteAllText(filename, csvContent);
+                    Console.WriteLine($"\n✓ Archivo CSV exportado: {filename}");
+                    Console.WriteLine($"  Total de registros: {cat048List.Count}");
+                    break;
+
+                case "3":
+                    var addresses = cat048List.GetUniqueAircraftAddresses();
+                    if (addresses.Count > 0)
                     {
-                        var parts = record.DataSourceIdentifier.Split(' ');
-                        if (parts.Length >= 2)
+                        Console.WriteLine("\nAeronaves disponibles:");
+                        for (int i = 0; i < addresses.Count; i++)
                         {
-                            sac = parts[0].Replace("SAC:", "");
-                            sic = parts[1].Replace("SIC:", "");
+                            var firstRec = cat048List.FilterByAircraftAddress(addresses[i]).First();
+                            Console.WriteLine($"  {i + 1}. {addresses[i]} - {firstRec.TI}");
                         }
-                    }
-                    Console.Write($"{sac,-10} | ");
-                    Console.Write($"{sic,-10} | ");
-
-                    // Time
-                    var time = "N/A";
-                    if (record.TimeOfDay.HasValue)
-                    {
-                        var totalHours = (int)record.TimeOfDay.Value.TotalHours;
-                        var minutes = record.TimeOfDay.Value.Minutes;
-                        var seconds = record.TimeOfDay.Value.Seconds;
-                        var millis = record.TimeOfDay.Value.Milliseconds;
-                        time = $"{totalHours:D2}:{minutes:D2}:{seconds:D2}.{millis:D3}";
-                    }
-                    Console.Write($"{time,-10} | ");
-
-                    // Convertir coordenadas polares a WGS84
-                    string lat = "N/A", lon = "N/A", alt = "N/A";
-
-                    if (record.RhoSlantRange > 0 && record.ThetaAzimuth >= 0)
-                    {
-                        try
+                        Console.Write("\nSelecciona número: ");
+                        if (int.TryParse(Console.ReadLine(), out int idx) && idx > 0 && idx <= addresses.Count)
                         {
-                            // Convertir de NM a metros
-                            double rhoMeters = record.RhoSlantRange * GeoUtils.NM2METERS;
-                            double thetaRadians = record.ThetaAzimuth * GeoUtils.DEGS2RADS;
-
-                            // Calcular elevación si tenemos altura 3D
-                            double elevation = 0;
-                            //if (record.Height3DRadar > 0)
-                            //{
-                              //  double heightMeters = record.Height3DRadar * GeoUtils.FEET2METERS;
-                                //elevation = GeoUtils.CalculateElevation(RadarBCN, geoUtils.R_S, rhoMeters, heightMeters);
-                            //}
-
-                            // Crear coordenadas polares
-                            CoordinatesPolar polar = new CoordinatesPolar(rhoMeters, thetaRadians, elevation);
-
-                            // Convertir: Polar -> Cartesiano Radar -> Geocéntrico -> Geodésico (WGS84)
-                            CoordinatesXYZ radarCart = GeoUtils.change_radar_spherical2radar_cartesian(polar);
-                            CoordinatesXYZ geocentric = geoUtils.change_radar_cartesian2geocentric(RadarBCN, radarCart);
-                            CoordinatesWGS84 wgs84 = geoUtils.change_geocentric2geodesic(geocentric);
-
-                            if (wgs84 != null)
+                            var selectedRecords = cat048List.FilterByAircraftAddress(addresses[idx - 1]);
+                            Console.WriteLine($"\n=== Registros de {addresses[idx - 1]} ===");
+                            foreach (var rec in selectedRecords)
                             {
-                                // Convertir radianes a grados
-                                lat = $"{(wgs84.Lat * GeoUtils.RADS2DEGS):F6}";
-                                lon = $"{(wgs84.Lon * GeoUtils.RADS2DEGS):F6}";
-                                alt = $"{wgs84.Height:F3}";
+                                Console.WriteLine($"Time: {rec.Time} | LAT: {rec.LAT:F6} | LON: {rec.LON:F6} | " +
+                                    $"FL: {rec.FL:F0} | GS: {rec.GS:F1} kt | HDG: {rec.HDG:F1}°");
                             }
                         }
-                        catch (Exception e)
-                        {
-                            Console.WriteLine(e.Message);
-                        }
                     }
+                    break;
 
-                    // LAT, LON, ALT
-                    Console.Write($"{lat,-10} | ");
-                    Console.Write($"{lon,-10} | ");
-                    Console.Write($"{alt,-10} | ");
+                case "4":
+                default:
+                    Console.WriteLine("\nSaliendo...");
+                    break;
+            }
+        }
 
-                    // H(m) (Height en metros derivados de Height3DRadar)
-                    //var heightM = record.Height3DRadar > 0 ? $"{(record.Height3DRadar * 0.3048):F0}" : "N/A";
-                    //Console.Write($"{heightM,-10} | ");
+        /// <summary>
+        /// Procesa la opción del menú CAT021
+        /// </summary>
+        static void ProcessCAT021MenuOption(string option, Cat021List cat021List)
+        {
+            switch (option)
+            {
+                case "1":
+                    cat021List.PrintAll();
+                    break;
 
-                    // RHO (Slant Range)
-                    var rho = record.RhoSlantRange > 0 ? $"{record.RhoSlantRange:F3}" : "N/A";
-                    Console.Write($"{rho,-10} | ");
+                case "2":
+                    string filename = $"cat021_export_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+                    cat021List.ExportToCSV(filename);
+                    Console.WriteLine($"\n✓ Archivo CSV exportado: {filename}");
+                    Console.WriteLine($"  Total de registros: {cat021List.Count}");
+                    break;
 
-                    // THETA (Azimuth)
-                    var theta = record.ThetaAzimuth >= 0 ? $"{record.ThetaAzimuth:F2}" : "N/A";
-                    Console.Write($"{theta,-10} | ");
-
-                    // Mode 3/A
-                    Console.Write($"{record.Mode3ACode ?? "N/A",-10} | ");
-
-                    // FL (Flight Level)
-                    var fl = record.FlightLevel != 0 ? $"{(record.FlightLevel / 4.0):F0}" : "N/A";
-                    Console.Write($"{fl,-10} | ");
-
-                    // TA, TI (de Mode S si disponible)
-                    var ta = "N/A";
-                    var ti = "N/A";
-                    if (record.ModeSData?.MBDataBlocks != null)
+                case "3":
+                    var validRecords = cat021List.GetValidRecords();
+                    Console.WriteLine($"\n=== Registros válidos (airborne + FIR BCN): {validRecords.Count} ===\n");
+                    foreach (var rec in validRecords.Take(20))
                     {
-                        var bds50 = record.ModeSData.MBDataBlocks.FirstOrDefault(b => b.BDSRegister == 0x50);
-                        if (bds50 != null && bds50.TrueTrackAngle > 0)
-                            ta = $"{bds50.TrueTrackAngle:F5}";
+                        Console.WriteLine($"Time: {rec.Time} | LAT: {rec.LAT:F6} | LON: {rec.LON:F6} | " +
+                            $"FL: {rec.FL} | Alt: {rec.Real_Altitude_ft:F0} ft | TA: {rec.TA} | TI: {rec.TI}");
                     }
-                    Console.Write($"{ta,-10} | ");
-                    Console.Write($"{ti,-10} | ");
-
-                    // BP (Barometric Pressure - no disponible)
-                    Console.Write($"{"N/A",-10} | ");
-
-                    // RA (Roll Angle de Mode S BDS 5.0)
-                    var ra = "N/A";
-                    if (record.ModeSData?.MBDataBlocks != null)
+                    if (validRecords.Count > 20)
                     {
-                        var bds50 = record.ModeSData.MBDataBlocks.FirstOrDefault(b => b.BDSRegister == 0x50);
-                        if (bds50 != null && bds50.RollAngle != 0)
-                            ra = $"{bds50.RollAngle:F2}";
+                        Console.WriteLine($"\n... y {validRecords.Count - 20} registros más");
                     }
-                    Console.Write($"{ra,-10} | ");
+                    break;
 
-                    // ITA (no disponible)
-                    Console.Write($"{"N/A",-10} | ");
+                case "4":
+                default:
+                    Console.WriteLine("\nSaliendo...");
+                    break;
+            }
+        }
 
-                    // GS (Ground Speed)
-                    var gs = record.GroundSpeedKnots > 0 ? $"{record.GroundSpeedKnots:F1}" : "N/A";
-                    Console.Write($"{gs,-10} | ");
+        /// <summary>
+        /// Procesa la opción del menú para ambas categorías
+        /// </summary>
+        static void ProcessBothCategoriesMenuOption(string option, Cat048List cat048List, Cat021List cat021List)
+        {
+            switch (option)
+            {
+                case "1":
+                    string csv048 = cat048List.ExportToCSV();
+                    string file048 = $"cat048_export_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+                    File.WriteAllText(file048, csv048);
+                    Console.WriteLine($"\n✓ CAT048 exportado: {file048} ({cat048List.Count} registros)");
+                    break;
 
-                    // TAR (Track Angle Rate de Mode S BDS 5.0)
-                    var tar = "N/A";
-                    if (record.ModeSData?.MBDataBlocks != null)
-                    {
-                        var bds50 = record.ModeSData.MBDataBlocks.FirstOrDefault(b => b.BDSRegister == 0x50);
-                        if (bds50 != null && bds50.TrackAngleRate != 0)
-                            tar = $"{bds50.TrackAngleRate:F2}";
-                    }
-                    Console.Write($"{tar,-10} | ");
+                case "2":
+                    string file021 = $"cat021_export_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+                    cat021List.ExportToCSV(file021);
+                    Console.WriteLine($"\n✓ CAT021 exportado: {file021} ({cat021List.Count} registros)");
+                    break;
 
-                    // TAS (True Airspeed de Mode S BDS 5.0)
-                    var tas = "N/A";
-                    if (record.ModeSData?.MBDataBlocks != null)
-                    {
-                        var bds50 = record.ModeSData.MBDataBlocks.FirstOrDefault(b => b.BDSRegister == 0x50);
-                        if (bds50 != null && bds50.TrueAirspeed > 0)
-                            tas = $"{bds50.TrueAirspeed:F0}";
-                    }
-                    Console.Write($"{tas,-10} | ");
+                case "3":
+                    string csv048_both = cat048List.ExportToCSV();
+                    string file048_both = $"cat048_export_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+                    File.WriteAllText(file048_both, csv048_both);
+                    
+                    string file021_both = $"cat021_export_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+                    cat021List.ExportToCSV(file021_both);
+                    
+                    Console.WriteLine($"\n✓ Ambas categorías exportadas:");
+                    Console.WriteLine($"  - CAT048: {file048_both} ({cat048List.Count} registros)");
+                    Console.WriteLine($"  - CAT021: {file021_both} ({cat021List.Count} registros)");
+                    break;
 
-                    // HDG (Heading)
-                    var hdg = record.HeadingDegrees > 0 ? $"{record.HeadingDegrees:F1}" : "N/A";
-                    Console.Write($"{hdg,-10} | ");
+                case "4":
+                    Console.WriteLine("\n=== ESTADÍSTICAS DETALLADAS ===");
+                    Console.WriteLine("\n--- CAT048 (Radar SMR) ---");
+                    cat048List.PrintSummary();
+                    Console.WriteLine("\n--- CAT021 (ADS-B) ---");
+                    cat021List.PrintStatistics();
+                    break;
 
-                    // IAS (Indicated Airspeed de Mode S BDS 6.0)
-                    var ias = "N/A";
-                    if (record.ModeSData?.MBDataBlocks != null)
-                    {
-                        var bds60 = record.ModeSData.MBDataBlocks.FirstOrDefault(b => b.BDSRegister == 0x60);
-                        if (bds60 != null && bds60.IndicatedAirspeed > 0)
-                            ias = $"{bds60.IndicatedAirspeed:F0}";
-                    }
-                    Console.Write($"{ias,-10} | ");
-
-                    // MACH (de Mode S BDS 6.0)
-                    var mach = "N/A";
-                    if (record.ModeSData?.MBDataBlocks != null)
-                    {
-                        var bds60 = record.ModeSData.MBDataBlocks.FirstOrDefault(b => b.BDSRegister == 0x60);
-                        if (bds60 != null && bds60.MachNumber > 0)
-                            mach = $"{bds60.MachNumber:F3}";
-                    }
-                    Console.Write($"{mach,-10} | ");
-
-                    // BAR (Barometric Altitude Rate de Mode S BDS 6.0 con fallback a Radial Doppler)
-                    var bar = "N/A";
-                    if (record.ModeSData?.MBDataBlocks != null)
-                    {
-                        var bds60 = record.ModeSData.MBDataBlocks.FirstOrDefault(b => b.BDSRegister == 0x60);
-                        if (bds60 != null && bds60.BarometricAltitudeRate != 0)
-                            bar = $"{bds60.BarometricAltitudeRate:F1}";
-                    }
-                    //if (bar == "N/A" && record.RadialDopplerSpeed != 0)
-                    //bar = $"{record.RadialDopplerSpeed:F1}";
-                    Console.Write($"{bar,-10} | ");
-
-                    // IVV (Inertial Vertical Velocity de Mode S BDS 6.0)
-                    var ivv = "N/A";
-                    if (record.ModeSData?.MBDataBlocks != null)
-                    {
-                        var bds60 = record.ModeSData.MBDataBlocks.FirstOrDefault(b => b.BDSRegister == 0x60);
-                        if (bds60 != null && bds60.InertialVerticalVelocity != 0)
-                            ivv = $"{bds60.InertialVerticalVelocity:F0}";
-                    }
-                    Console.Write($"{ivv,-10} | ");
-
-                    // TN (Track Number)
-                    var tn = record.TrackNumber > 0 ? $"{record.TrackNumber}" : "N/A";
-                    Console.Write($"{tn,-10} | ");
-
-                    // GSSD (Ground Speed from Mode S)
-                    var gssd = "N/A";
-                    if (record.ModeSData?.MBDataBlocks != null)
-                    {
-                        var bds50 = record.ModeSData.MBDataBlocks.FirstOrDefault(b => b.BDSRegister == 0x50);
-                        if (bds50 != null && bds50.GroundSpeed > 0)
-                            gssd = $"{bds50.GroundSpeed:F0}";
-                    }
-                    Console.Write($"{gssd,-10} | ");
-
-                    // HDG2 (Magnetic Heading de Mode S BDS 6.0)
-                    var hdg2 = "N/A";
-                    if (record.ModeSData?.MBDataBlocks != null)
-                    {
-                        var bds60 = record.ModeSData.MBDataBlocks.FirstOrDefault(b => b.BDSRegister == 0x60);
-                        if (bds60 != null && bds60.MagneticHeading > 0)
-                            hdg2 = $"{bds60.MagneticHeading:F1}";
-                    }
-                    Console.Write($"{hdg2,-10} | ");
-
-                    // Stat (Status/Type de la imagen)
-                    var stat = record.TargetReportDescriptor ?? "N/A";
-                    if (stat.Length > 10) stat = stat.Substring(0, 10);
-                    Console.Write($"{stat,-10} | ");
-
-                    // AD (Aircraft Address)
-                    Console.Write($"{record.AircraftAddress ?? "N/A",-10} | ");
-
-                    Console.WriteLine();
-                }
+                case "5":
+                default:
+                    Console.WriteLine("\nSaliendo...");
+                    break;
             }
         }
     }
 }
-
-    //string filePath = "datos_asterix_combinado.ast"; // Canvia-ho pel teu fitxer ASTERIX
-    //var reader = new BinaryFileReader(filePath);
-    //var messages = reader.ReadMessages();
-
-    //Console.WriteLine($"S'han llegit {messages.Count} missatges del fitxer.\n");
-
-    //        for (int i = 0; i<Math.Min(20, messages.Count); i++)
-    //        {
-    //            var msg = messages[i];
-    //byte category = msg[0];
-    //int length = (msg[1] << 8) | msg[2];
-
-    //var decoder = new Cat048Decoder(msg);
-    //var records = decoder.Decode();
-
-    //            foreach (var record in records)
-    //            {
-    //                Console.WriteLine(
-    //                    $"Msg {i + 1}: " +
-    //                    $"Cat={category}, Longitud={length}, " +
-    //                    $"{record.DataSourceIdentifier}, " +
-    //                    $"TimeOfDay={record.TimeOfDay}, " +
-    //                    $"Rho={record.RhoSlantRange}, " +
-    //                    $"Theta={record.ThetaAzimuth}, " +
-    //                    $"Mode3A={record.Mode3ACode}, " +
-    //                    $"Id={record.AircraftIdentification} " 
-
-    //                );
-    //            }
-    //        }
