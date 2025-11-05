@@ -2,7 +2,7 @@ using System;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using AsterixDecoder.Models; // make sure this matches your namespace for Cat021Decoder
+using AsterixDecoder.Models; // ensure the namespace matches your Cat021Decoder
 
 namespace AsterixDecoder
 {
@@ -13,6 +13,7 @@ namespace AsterixDecoder
             Console.WriteLine("\n=== Running CAT021 Decoder ===\n");
 
             // Input ASTERIX file
+            // *** NOTE: Your path was cut off, make sure this is correct ***
             string filePath = "/Users/marcrodulfo/Documents/datos_asterix_adsb.ast";
 
             // CSV output path
@@ -20,14 +21,14 @@ namespace AsterixDecoder
 
             if (!File.Exists(filePath))
             {
-                Console.WriteLine("❗ File not found. Please check the path.");
+                Console.WriteLine($"❗ File not found. Please check the path: {filePath}");
                 return;
             }
 
             try
             {
                 byte[] data = File.ReadAllBytes(filePath);
-                double qnhActual = 1013.25; // adjust as needed
+                double qnhActual = 1013.25; // Adjust if local QNH differs
 
                 var decoder = new Cat021Decoder(data, qnhActual);
                 var records = decoder.Decode();
@@ -35,9 +36,12 @@ namespace AsterixDecoder
                 Console.WriteLine($"✅ Successfully decoded {records.Count} airborne CAT021 records.\n");
 
                 // Print table header
-                // Print table header
-                Console.WriteLine("{0,-3} {1,-3} {2,-8} {3,-9} {4,-9} {5,-6} {6,-6} {7,-7} {8,-8} {9,-10} {10,-2}",
-                    "CAT", "SAC", "SIC", "Time", "LAT", "LON", "Mode3/A", "FL", "TA", "TI", "BP");
+                Console.WriteLine(
+                    "{0,-7} {1,-4} {2,-4} {3,-10} {4,-10} {5,-10} {6,-8} {7,-8} {8,-10} {9,-10} {10,-8}",
+                    "CAT", "SAC", "SIC", "Time", "LAT", "LON", "Mode3/A", "FL", "TA", "TI", "BPS(hPa)"
+                );
+
+                Console.WriteLine(new string('-', 100));
 
                 // Print each record
                 foreach (var r in records)
@@ -48,7 +52,17 @@ namespace AsterixDecoder
 
                     string ta = r.Target_Address ?? "------";
                     string ti = r.Target_Identification ?? "--------";
-                    string bp = r.TargetReportDescriptor ?? "";
+
+                    // ==========================================================
+                    //
+                    // THIS IS THE LINE THAT WAS BROKEN
+                    // It's now fixed to use .HasValue just like you did in WriteCsv
+                    //
+                    string bpsStr = r.BarometricPressureSetting.HasValue // <-- THIS IS CORRECT
+                        ? r.BarometricPressureSetting.Value.ToString("F1", CultureInfo.InvariantCulture)
+                        : "--";
+                    //
+                    // ==========================================================
 
                     string sac = "--";
                     string sic = "--";
@@ -62,11 +76,21 @@ namespace AsterixDecoder
                         }
                     }
 
-                    Console.WriteLine("{0,-6} {1,-6} {2,-3} {3,-8} {4,-9:F5} {5,-9:F5} {6,-6} {7,-6} {8,-7} {9,-10} {10,-2}",
-                        "CAT021", sac, sic, timeStr, r.WGS84_Latitude, r.WGS84_Longitude,
-                        r.Mode3A_Code, r.Flight_Level, ta, ti, bp);
+                    Console.WriteLine(
+                        "{0,-7} {1,-4} {2,-4} {3,-10} {4,-10:F5} {5,-10:F5} {6,-8} {7,-8} {8,-10} {9,-10} {10,-8}",
+                        "CAT021",
+                        sac,
+                        sic,
+                        timeStr,
+                        r.WGS84_Latitude,
+                        r.WGS84_Longitude,
+                        r.Mode3A_Code ?? "---",
+                        r.Flight_Level,
+                        ta,
+                        ti,
+                        bpsStr
+                    );
                 }
-
 
                 // Write CSV
                 Cat021Decoder.WriteCsv(csvOutputPath, records);

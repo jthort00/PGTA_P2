@@ -50,7 +50,7 @@ namespace AsterixDecoder.Models
             // FRN48 - Re-data Barometric Pressure 
             public byte[] Reserved_Expansion_Field { get; set; }
             public bool? BarometricPressureSource { get; set; } 
-            public double BarometricPressureSetting { get; set; }
+            public double? BarometricPressureSetting { get; set; }
         }
 
         public Cat021Decoder(byte[] asterixData, double qnhActual=1013.25)
@@ -92,12 +92,12 @@ namespace AsterixDecoder.Models
 
                 //Applying CAT021 filter and corrections
                 // Filter: Only airborne & within Barcelona FIR
-                  if (record.IsOnGround) 
-	                  continue;
+                  //if (record.IsOnGround) 
+	                  //continue;
                 //
-                if (!(record.WGS84_Latitude > 40.9 && record.WGS84_Latitude < 41.7 &&
-                       record.WGS84_Longitude > 1.5 && record.WGS84_Longitude < 2.6))
-	                  continue;
+                //if (!(record.WGS84_Latitude > 40.9 && record.WGS84_Latitude < 41.7 &&
+                       //record.WGS84_Longitude > 1.5 && record.WGS84_Longitude < 2.6))
+	                  //continue;
                 
                 // Altitude correction using QNH
                 if (record.Flight_Level > 0)
@@ -523,63 +523,135 @@ namespace AsterixDecoder.Models
 			}
 			
 			// FRN 42 - I021/280 - Data Ages (no need to decode)
-			if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(1, recordEnd))
-			{
-				// Skip 1..N bytes while FX=1
-				do
-				{
-					byte b = data[currentByte++];
-					if ((b & 0b00000001) == 0) break;
-				} while (currentByte < recordEnd);
-			}
+          if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(1, recordEnd))
+          {
+             // Skip 1..N bytes while FX=1
+             do
+             {
+                byte b = data[currentByte++];
+                if ((b & 0b00000001) == 0) break;
+             } while (currentByte < recordEnd);
+          }
 
+          // --- BEGIN FIX: ALIGNING FSPEC FOR FRN 48 ---
+          // We must increment fspecIndex for all fields between 42 and 48.
+          // For fields that are defined (like 46 & 47), we must also
+          // skip their data if they are present, or the cursor will be wrong.
+
+          // FRN 43 - (Unassigned)
+          if (fspecIndex < fspec.Count && fspec[fspecIndex++])
+          {
+              // This item is not expected in this spec.
+              // If this (fspec[42]) is 1, the decoder will likely fail,
+              // as we don't know the item's length to skip it.
+          }
+          
+          // FRN 44 - (Unassigned)
+          if (fspecIndex < fspec.Count && fspec[fspecIndex++])
+          {
+              // Increment fspecIndex (for bit 44)
+          }
+          
+          // FRN 45 - (Unassigned)
+          if (fspecIndex < fspec.Count && fspec[fspecIndex++])
+          {
+              // Increment fspecIndex (for bit 45)
+          }
+          
+          // FRN 46 - I021/295 - Reserved Expansion Field (v2.1)
+          // You said this is empty, but if its FSPEC bit (fspec[45]) is set,
+          // we MUST skip its variable-length data.
+          if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(1, recordEnd))
+          {
+             Console.WriteLine("[DEBUG] Skipping FRN 46 data...");
+             do
+             {
+                byte b = data[currentByte++];
+                if ((b & 0x01) == 0) break; // FX=0
+             } while (currentByte < recordEnd);
+          }
+          
+          // FRN 47 - I021/276 - Special Purpose Field (v2.1)
+          // We must also skip this variable-length (FX) field if present.
+          if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(1, recordEnd))
+          {
+             Console.WriteLine("[DEBUG] Skipping FRN 47 (SPF) data...");
+             do
+             {
+                byte b = data[currentByte++];
+                if ((b & 0x01) == 0) break; // FX=0
+             } while (currentByte < recordEnd);
+          }
+
+          // --- FRN 48 – Reserved Expansion Field (REF) ---
+          // This is fspecIndex 47 (the 48th bit).
+          // This is where your spec (v2.1) says the BPS bit is.
+          if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(1, recordEnd))
+          {
+              // Console.WriteLine("[DEBUG] FRN 48 (REF) block entered.");
+              
+              // Read the first octet of the REF
+              byte refOctet1 = data[currentByte++];
+
+              // Per your spec: (BPS SelH NAV GAO SGV STA TNH MES)
+              bool bpsPresent = (refOctet1 & 0b_1000_0000) != 0; // Check Bit 8
+              // ... other bits ...
+
+              // Check for more REF octets (FX bit)
+              bool fx = (refOctet1 & 0x01) != 0;
+              while (fx && currentByte < recordEnd)
+              {
+                  byte nextOctet = data[currentByte++];
+                  fx = (nextOctet & 0x01) != 0;
+              }
+               
+              // --- NOW, decode sub-items based on the bits we found ---
+               
+              // --- 1. Decode Barometric Pressure Setting (I021/090) ---
+              if (bpsPresent)
+              {
+                  // Console.WriteLine("[DEBUG] BPS bit is SET. Decoding value...");
+
+                  if (CheckBytes(2, recordEnd))
+                  {
+                      ushort raw = (ushort)((data[currentByte] << 8) | data[currentByte + 1]);
+                      currentByte += 2;
+                      ushort bps12bit = (ushort)(raw & 0x0FFF);
+                      double bpsValue = 800.0 + (bps12bit * 0.1);
+
+                       // This is the "relaxed filter" logic from the previous step
+                       if (bps12bit == 0)
+                       {
+                           record.BarometricPressureSetting = 800.0; 
+                           Console.WriteLine($"[REF/BPS] DECODED: BPS raw=0 -> (<= 800.0 hPa)");
+                       }
+                       else if (bps12bit == 0x0FFF)
+                       {
+                           record.BarometricPressureSetting = 1209.5; 
+                           Console.WriteLine($"[REF/BPS] DECODED: BPS raw=4095 -> (>= 1209.5 hPa)");
+                       }
+                       else
+                       {
+                           // This is a standard decoded value. Accept all of them.
+                           record.BarometricPressureSetting = bpsValue; 
+                           Console.WriteLine($"[BPS_FOUND] Found BPS={bpsValue:F1} | At LAT={record.WGS84_Latitude:F5}, LON={record.WGS84_Longitude:F5}");
+                       }
+                  }
+                  else
+                  {
+                      Console.WriteLine("[REF/BPS] ⚠️ REF indicated BPS, but data ended prematurely.");
+                  }
+              }
+              // else
+              // {
+              //    Console.WriteLine("[DEBUG] FRN 48 was present, but BPS bit was 0.");
+              // }
+          }
+		} // <-- This is the closing brace for DecodeRecord
 			
-            // FRN 48 - Reserved Expansion Field
-            // --- FRN48 : Reserved Expansion Field (REF) ---
-            if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(1, recordEnd))
-            {
-	            int start = currentByte;
-	            byte indicator = data[currentByte++];
-
-	            Console.WriteLine($"[FRN48] Indicator = 0x{indicator:X2} (bits: {Convert.ToString(indicator, 2).PadLeft(8, '0')})");
-
-	            bool hasBPS = (indicator & 0b1000_0000) != 0; // bit 8 = BPS flag
-	            record.BarometricPressureSetting = 1013.25;      // initialize (in case absent)
-
-	            if (hasBPS)
-	            {
-		            if (CheckBytes(2, recordEnd))
-		            {
-			            ushort raw = (ushort)((data[currentByte] << 8) | data[currentByte + 1]);
-			            currentByte += 2;
-
-			            // Extract bits 12–1 → 0x0FFF mask
-			            int bpsRaw = raw & 0x0FFF;
-			            double bpsValue = 800.0 + bpsRaw * 0.1; // per ASTERIX definition
-
-			            record.BarometricPressureSetting = bpsValue;
-
-			            Console.WriteLine($"   → BPS present: raw=0x{raw:X4} ({bpsRaw}) → {bpsValue:F1} hPa");
-		            }
-		            else
-		            {
-			            Console.WriteLine("   Not enough bytes for BPS field!");
-		            }
-	            }
-	            else
-	            {
-		            Console.WriteLine("   No BPS present in REF");
-	            }
-
-	            // FX = bit 1 of last octet
-	            if ((indicator & 0x01) != 0)
-	            {
-		            Console.WriteLine("   FX=1 → more REF octets follow (not handled yet)");
-	            }
-            }
-
-
-        }
+	    
+        
+        
         
         // Em faig aquests mètodes per poder decodificar la FRN29 amb els noms que em dona problema per captar els números dels callsigns
         private static string DecodeTargetIdentification(byte[] data, int startIndex, int length)
@@ -650,42 +722,51 @@ namespace AsterixDecoder.Models
 
 
 
-		public static void WriteCsv(string filePath, List<Cat021Record> records)
-		{
-			using (var writer = new StreamWriter(filePath, false, Encoding.UTF8))
-			{
-				writer.WriteLine("CAT;SAC;SIC;Time;LAT;LON;Mode3A_Code;FL;TA;TI;BP");
-				foreach (var r in records)
-				{
-					string timeStr = r.Time_Reception_Position.HasValue
-						? r.Time_Reception_Position.Value.ToString(@"hh\:mm\:ss")
-						: "--:--:--";
+        public static void WriteCsv(string filePath, List<Cat021Record> records)
+        {
+	        using (var writer = new StreamWriter(filePath, false, Encoding.UTF8))
+	        {
+		        // Updated header to clearly state "BPS(hPa)"
+		        writer.WriteLine("CAT;SAC;SIC;Time;LAT;LON;Mode3A_Code;FL;TA;TI;BPS(hPa)");
 
-					string ta = r.Target_Address ?? "------";
-					string ti = r.Target_Identification ?? "--------";
-					string bp = r.TargetReportDescriptor ?? "";
+		        foreach (var r in records)
+		        {
+			        string timeStr = r.Time_Reception_Position.HasValue
+				        ? r.Time_Reception_Position.Value.ToString(@"hh\:mm\:ss")
+				        : "--:--:--";
 
-					string sac = "--";
-					string sic = "--";
-					if (!string.IsNullOrEmpty(r.DataSourceIdentifier) && r.DataSourceIdentifier.Contains("SAC:"))
-					{
-						var parts = r.DataSourceIdentifier.Split(' ');
-						if (parts.Length == 2)
-						{
-							sac = parts[0].Replace("SAC:", "");
-							sic = parts[1].Replace("SIC:", "");
-						}
-					}
-					string latStr = r.WGS84_Latitude.ToString("F6", CultureInfo.InvariantCulture);
-					string lonStr = r.WGS84_Longitude.ToString("F6", CultureInfo.InvariantCulture);
+			        string ta = r.Target_Address ?? "------";
+			        string ti = r.Target_Identification ?? "--------";
 
-					writer.WriteLine($"021;{sac};{sic};{timeStr};{latStr};{lonStr};{r.Mode3A_Code};{r.Flight_Level};{ta};{ti};{bp}");
-				}
+			        // Format BPS value (if decoded)
+			        // FIXED: This correctly checks the nullable property
+			        // FIXED: This correctly checks the nullable property
+			        string bpsStr = r.BarometricPressureSetting.HasValue
+				        ? r.BarometricPressureSetting.Value.ToString("F1", CultureInfo.InvariantCulture)
+				        : "--";
+				       
+			        string sac = "--";
+			        string sic = "--";
+			        if (!string.IsNullOrEmpty(r.DataSourceIdentifier) && r.DataSourceIdentifier.Contains("SAC:"))
+			        {
+				        var parts = r.DataSourceIdentifier.Split(' ');
+				        if (parts.Length == 2)
+				        {
+					        sac = parts[0].Replace("SAC:", "");
+					        sic = parts[1].Replace("SIC:", "");
+				        }
+			        }
 
-			}
-		}
+			        string latStr = r.WGS84_Latitude.ToString("F6", CultureInfo.InvariantCulture);
+			        string lonStr = r.WGS84_Longitude.ToString("F6", CultureInfo.InvariantCulture);
+
+			        writer.WriteLine($"021;{sac};{sic};{timeStr};{latStr};{lonStr};{r.Mode3A_Code};{r.Flight_Level};{ta};{ti};{bpsStr}");
+		        }
+	        }
+        }
     }
 }
+
 
 
 
