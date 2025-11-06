@@ -133,7 +133,7 @@ namespace AsterixDecoder.Models.CAT021
                 Console.WriteLine($"  - Real Altitude (ft): {r.Real_Altitude_ft:F2}");
                 Console.WriteLine($"  - TA: {r.TA}");
                 Console.WriteLine($"  - TI: {r.TI}");
-                Console.WriteLine($"  - BP: {r.BP}");
+                Console.WriteLine($"  - BP: {r.BP:F3}");
                 Console.WriteLine($"  - IsOnGround: {r.IsOnGround}");
                 Console.WriteLine();
             }

@@ -1,9 +1,10 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using AsterixDecoder.Models.CAT021;
 
 
 namespace AsterixDecoder.Models
@@ -16,53 +17,16 @@ namespace AsterixDecoder.Models
     {
         private byte[] data;
         private int currentByte;
-        private double Actual_QNH; 
-
-        public class Cat021Record
-        {
-            // FRN 1 - I021/010
-            public string DataSourceIdentifier { get; set; }
-            
-            // FRN 2 - I021/040
-            public bool IsOnGround { get; set; }
-            public double Real_Altitude_ft { get; set; }
-            public string TargetReportDescriptor { get; set; }
-
-            // FRN 7 - I021/131 
-            public double WGS84_Latitude { get; set; }
-            public double WGS84_Longitude { get; set; }
-
-            // FRN 11 - I021/080
-            public string Target_Address { get; set; }
-
-            // FRN 12 - I021/073
-            public TimeSpan? Time_Reception_Position { get; set; }
-
-            // FRN 19 - I021/070
-            public string Mode3A_Code { get; set; }
-
-            // FRN21 - I021/145
-            public int Flight_Level { get; set; }
-
-            // FRN29 - I021/170
-            public string Target_Identification { get; set; }
-
-            // FRN48 - Re-data Barometric Pressure 
-            public byte[] Reserved_Expansion_Field { get; set; }
-            public bool? BarometricPressureSource { get; set; } 
-            public double? BarometricPressureSetting { get; set; }
-        }
 
         public Cat021Decoder(byte[] asterixData, double qnhActual=1013.25)
         {
             data = asterixData;
             currentByte = 0;
-            Actual_QNH = qnhActual;
         }
 
-        public List<Cat021Record> Decode()
+        public List<RawCat021Data> Decode()
         {
-            var records = new List<Cat021Record>();
+            var records = new List<RawCat021Data>();
 
             while (currentByte < data.Length)
             {
@@ -83,47 +47,8 @@ namespace AsterixDecoder.Models
 
 	            // Decode FSPEC + record
 	            var fspec  = ReadFSPEC();
-	            var record = new Cat021Record();
+	            var record = new RawCat021Data();
 	            DecodeRecord(record, fspec, recordEnd);
-
-                
-                //Console.WriteLine($"IsOnGround={record.IsOnGround}");
-                //Console.WriteLine($"Lat={record.WGS84_Latitude:F5}, Lon={record.WGS84_Longitude:F5}, OnGround={record.IsOnGround}");
-
-                //Applying CAT021 filter and corrections
-                // Filter: Only airborne & within Barcelona FIR
-                  //if (record.IsOnGround) 
-	                  //continue;
-                //
-                //if (!(record.WGS84_Latitude > 40.9 && record.WGS84_Latitude < 41.7 &&
-                       //record.WGS84_Longitude > 1.5 && record.WGS84_Longitude < 2.6))
-	                  //continue;
-                
-                // Altitude correction using QNH
-                if (record.Flight_Level > 0)
-                {
-	                double indicatedAltitude = record.Flight_Level * 100; // FL100 = 10,000 ft
-	                bool isBelowTA = indicatedAltitude < 6000;
-
-	                // Determine which barometric source to apply
-	                bool useQNH = record.BarometricPressureSource.HasValue
-		                ? record.BarometricPressureSource.Value
-		                : isBelowTA; // fallback if BPS missing
-
-	                if (useQNH)
-	                {
-		                record.Real_Altitude_ft = indicatedAltitude + (Actual_QNH - 1013.25) * 30.0;
-	                }
-	                else
-	                {
-		                record.Real_Altitude_ft = indicatedAltitude;
-	                }
-	                // Console.WriteLine(
-		               //  $"[ALT CHECK] FL={record.Flight_Level:000} → {record.Real_Altitude_ft,7:F0} ft | " +
-		               //  $"BPS={(record.BarometricPressureSource.HasValue ? (record.BarometricPressureSource.Value ? "QNH" : "STD") : "UNK")} " +
-		               //  $"| " +
-		               //  $"Region={(isBelowTA ? "Below TA" : "Above TA")} | QNH={Actual_QNH:F2} hPa");
-                }
 
                 records.Add(record);
                 currentByte = recordEnd;
@@ -158,16 +83,15 @@ namespace AsterixDecoder.Models
         
         
 
-        private void DecodeRecord(Cat021Record record, List<bool> fspec, int recordEnd)
+        private void DecodeRecord(RawCat021Data record, List<bool> fspec, int recordEnd)
 		{
 		    int fspecIndex = 0;
 		    
 		    // FRN 1 - I021/010 Data Source Identifier
 		    if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(2, recordEnd))
 		    {
-		        int sac = data[currentByte++];
-		        int sic = data[currentByte++];
-		        record.DataSourceIdentifier = $"SAC:{sac} SIC:{sic}";
+		        record.SAC = data[currentByte++];
+		        record.SIC = data[currentByte++];
 		        //Console.WriteLine($"After FRN FRN1: currentByte={currentByte}");
 		    }
 
@@ -183,11 +107,11 @@ namespace AsterixDecoder.Models
 		            fx = (b & 0x01) != 0;
 		        }
 		        byte octet1 = trdBytes[0];
-		        int atp = (octet1 >> 5) & 0x07;
-		        int arc = (octet1 >> 3) & 0x03;
-		        int rc  = (octet1 >> 2) & 0x01;
-		        int rab = (octet1 >> 1) & 0x01;
-		        record.TargetReportDescriptor = $"ATP={atp}, ARC={arc}, RC={rc}, RAB={rab}";
+		        record.ATP = (octet1 >> 5) & 0x07;
+		        record.ARC = (octet1 >> 3) & 0x03;
+		        record.RC  = (octet1 >> 2) & 0x01;
+		        record.RAB = (octet1 >> 1) & 0x01;
+		        record.TargetReportDescriptor = $"ATP={record.ATP}, ARC={record.ARC}, RC={record.RC}, RAB={record.RAB}";
 		    }
 
 		    // FRN 3 - I021/161 Track Number
@@ -343,19 +267,7 @@ namespace AsterixDecoder.Models
 			    int rawFl = ((msb & 0x7F) << 8) | lsb;
 
 			    // Convert to Flight Level (1 FL = 25 ft)
-			    record.Flight_Level = rawFl / 4;
-
-			    // Convert to standard feet
-			    record.Real_Altitude_ft = record.Flight_Level * 100.0;
-
-			    //Console.WriteLine($"[FRN21 DEBUG] raw=0x{rawFl:X4}, FL={record.Flight_Level}, Alt(ft)={record.Real_Altitude_ft}");
-
-			    // Detect below TA (6000 ft)
-			    if (record.Real_Altitude_ft < 6000)
-			    {
-				    //Console.WriteLine($"⚠️ Aircraft below TA: Alt={record.Real_Altitude_ft} ft");
-				    // Apply QNH correction here if needed
-			    }
+			    record.FlightLevel_Raw = rawFl / 4;
 		    }
 
 
@@ -617,7 +529,7 @@ namespace AsterixDecoder.Models
 		              {
 			              record.BarometricPressureSetting = bpsValue;
 			              Console.WriteLine(
-				              $"[BPS_FOUND] Found BPS={bpsValue:F1} | At LAT={record.WGS84_Latitude:F5}, LON={record.WGS84_Longitude:F5}");
+				              $"[BPS_FOUND] Found BPS={record.BarometricPressureSetting:F1} | At LAT={record.WGS84_Latitude:F5}, LON={record.WGS84_Longitude:F5}");
 		              }
 	              }
 	              else
@@ -627,9 +539,6 @@ namespace AsterixDecoder.Models
               }
           }
 		} 
-			
-	    
-        
         
         
         // Em faig aquests mètodes per poder decodificar la FRN29 amb els noms que em dona problema per captar els números dels callsigns
@@ -697,51 +606,6 @@ namespace AsterixDecoder.Models
 	        }
 
 	        return sb.ToString().Trim();
-        }
-
-
-
-        public static void WriteCsv(string filePath, List<Cat021Record> records)
-        {
-	        using (var writer = new StreamWriter(filePath, false, Encoding.UTF8))
-	        {
-		        // Updated header to clearly state "BPS(hPa)"
-		        writer.WriteLine("CAT;SAC;SIC;Time;LAT;LON;Mode3A_Code;FL;TA;TI;BPS(hPa)");
-
-		        foreach (var r in records)
-		        {
-			        string timeStr = r.Time_Reception_Position.HasValue
-				        ? r.Time_Reception_Position.Value.ToString(@"hh\:mm\:ss")
-				        : "--:--:--";
-
-			        string ta = r.Target_Address ?? "------";
-			        string ti = r.Target_Identification ?? "--------";
-
-			        // Format BPS value (if decoded)
-			        // FIXED: This correctly checks the nullable property
-			        // FIXED: This correctly checks the nullable property
-			        string bpsStr = r.BarometricPressureSetting.HasValue
-				        ? r.BarometricPressureSetting.Value.ToString("F1", CultureInfo.InvariantCulture)
-				        : "--";
-				       
-			        string sac = "--";
-			        string sic = "--";
-			        if (!string.IsNullOrEmpty(r.DataSourceIdentifier) && r.DataSourceIdentifier.Contains("SAC:"))
-			        {
-				        var parts = r.DataSourceIdentifier.Split(' ');
-				        if (parts.Length == 2)
-				        {
-					        sac = parts[0].Replace("SAC:", "");
-					        sic = parts[1].Replace("SIC:", "");
-				        }
-			        }
-
-			        string latStr = r.WGS84_Latitude.ToString("F6", CultureInfo.InvariantCulture);
-			        string lonStr = r.WGS84_Longitude.ToString("F6", CultureInfo.InvariantCulture);
-
-			        writer.WriteLine($"021;{sac};{sic};{timeStr};{latStr};{lonStr};{r.Mode3A_Code};{r.Flight_Level};{ta};{ti};{bpsStr}");
-		        }
-	        }
         }
     }
 }
