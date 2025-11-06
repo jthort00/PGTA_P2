@@ -8,6 +8,7 @@ using AsterixDecoder.Models.CAT021;
 using MultiCAT6.Utils;
 using AsterixDecoder.Models;
 using System.Linq;
+using VisioForge.Libs.TagLib.IFD.Tags;
 
 namespace AsterixDecoder
 {
@@ -215,7 +216,7 @@ namespace AsterixDecoder
 
                     foreach (var rawRecord in rawRecords)
                     {
-                        var cat021Object = ConvertToCAT021(rawRecord, qnh);
+                        var cat021Object = new Cat021(rawRecord, qnh);
                         cat021List.Add(cat021Object);
                         processedCount++;
                     }
@@ -287,7 +288,7 @@ namespace AsterixDecoder
 
                     foreach (var rawRecord in rawRecords)
                     {
-                        var cat021Object = ConvertToCAT021(rawRecord, qnh);
+                        var cat021Object = new Cat021(rawRecord, qnh);
                         cat021List.Add(cat021Object);
                         cat021Records++;
                     }
@@ -300,28 +301,7 @@ namespace AsterixDecoder
             ShowBothCategoriesMenu(cat048List, cat021List);
         }
 
-        /// <summary>
-        /// Convierte un Cat021Record a objeto Cat021
-        /// </summary>
-        static Cat021 ConvertToCAT021(Cat021Decoder.Cat021Record rawRecord, double qnh)
-        {
-            var rawData = new RawCat021Data
-            {
-                SAC = int.Parse(rawRecord.DataSourceIdentifier?.Split(':')[1].Split(' ')[0] ?? "0"),
-                SIC = int.Parse(rawRecord.DataSourceIdentifier?.Split(':')[2] ?? "0"),
-                TargetReportDescriptor = rawRecord.TargetReportDescriptor,
-                WGS84_Latitude = rawRecord.WGS84_Latitude,
-                WGS84_Longitude = rawRecord.WGS84_Longitude,
-                Target_Address = rawRecord.Target_Address,
-                Time_Reception_Position = rawRecord.Time_Reception_Position,
-                Mode3A_Code = rawRecord.Mode3A_Code,
-                FlightLevel_Raw = rawRecord.Flight_Level * 4,
-                Target_Identification = rawRecord.Target_Identification,
-                BarometricPressureSource = rawRecord.BarometricPressureSource,
-                BarometricPressureSetting = rawRecord.BarometricPressureSetting
-            };
-            return new Cat021(rawData, qnh);
-        }
+        
 
 
 

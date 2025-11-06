@@ -63,12 +63,8 @@ namespace AsterixDecoder.Models.CAT021
             TI = rawData.Target_Identification ?? "N/A";
 
             // Barometric Pressure
-            BP = rawData.BarometricPressureSetting.HasValue
-                ? Math.Round(rawData.BarometricPressureSetting.Value, 2)
-                : (double?)null;
-
-
-
+            BP = BP = rawData.BarometricPressureSetting;
+            Console.WriteLine($"Debug: BP={BP}"); 
 
             // Determinar si está en tierra (ATP: 0=unknown, 1=ADS-B, 2=ADS-B+ES, 3=ADS-B+ES+extended)
             // Típicamente ATP=1,2,3 son airborne, pero también se puede inferir de otros campos

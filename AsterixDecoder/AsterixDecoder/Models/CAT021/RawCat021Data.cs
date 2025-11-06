@@ -38,7 +38,6 @@ namespace AsterixDecoder.Models.CAT021
         public string Target_Identification { get; set; }
 
         // FRN 48 - Reserved Expansion Field
-        public bool? BarometricPressureSource { get; set; }
         public double? BarometricPressureSetting { get; set; }
     }
 }
