@@ -130,7 +130,7 @@ namespace AsterixDecoder.Models.CAT021
                 Console.WriteLine($"  - LON: {r.LON:F6}");
                 Console.WriteLine($"  - Mode3/A: {r.Mode3A}");
                 Console.WriteLine($"  - FL: {r.FL}");
-                Console.WriteLine($"  - Real Altitude (ft): {r.Real_Altitude_ft:F2}");
+                Console.WriteLine($"  - ModeC_Corrected: {r.ModeC_Corrected:F2}");
                 Console.WriteLine($"  - TA: {r.TA}");
                 Console.WriteLine($"  - TI: {r.TI}");
                 Console.WriteLine($"  - BP: {r.BP:F3}");
@@ -147,21 +147,34 @@ namespace AsterixDecoder.Models.CAT021
             using (var writer = new StreamWriter(filePath, false, Encoding.UTF8))
             {
                 // Encabezados
-                writer.WriteLine("CAT;SAC;SIC;Time;LAT;LON;Mode3A_Code;FL;Real_Alt_ft;TA;TI;BP;OnGround");
+                writer.WriteLine("CAT;SAC;SIC;Time;LAT;LON;Mode3A_Code;FL;ModeC_Corrected;TA;TI;BP;OnGround");
+                var cultureEs = new CultureInfo("es-ES");
 
-                // Datos
                 foreach (var r in records)
                 {
-                    string latStr = r.LAT.ToString("F6", CultureInfo.InvariantCulture);
-                    string lonStr = r.LON.ToString("F6", CultureInfo.InvariantCulture);
-                    string altStr = r.Real_Altitude_ft.ToString("F0", CultureInfo.InvariantCulture);
-                    string bpStr = r.BP.HasValue 
-                        ? r.BP.Value.ToString("F2", CultureInfo.InvariantCulture) 
-                        : "N/A";
+                    string latStr = r.LAT.ToString("F6", cultureEs);
+                    string lonStr = r.LON.ToString("F6", cultureEs);
+                    string altStr = r.ModeC_Corrected.ToString("F0", cultureEs);
+                    string bpStr = "NV";
+
+                    if (r.BP.HasValue && r.BP.Value >= 1000 && r.BP.Value <= 1030)
+                        bpStr = r.BP.Value.ToString("F2", cultureEs);
 
                     writer.WriteLine($"{r.CAT};{r.SAC};{r.SIC};{r.Time};{latStr};{lonStr};" +
                                      $"{r.Mode3A};{r.FL};{altStr};{r.TA};{r.TI};{bpStr};{r.IsOnGround}");
                 }
+
+
+                // Datos
+                foreach (var r in records) 
+                { string latStr = r.LAT.ToString("F6", CultureInfo.InvariantCulture); 
+                    string lonStr = r.LON.ToString("F6", CultureInfo.InvariantCulture); 
+                    string altStr = r.ModeC_Corrected.ToString("F0", CultureInfo.InvariantCulture); 
+                    string bpStr = "NV"; 
+                    // default if value is out of range or null
+                    if (r.BP.HasValue) { if (r.BP.Value >= 1000 && r.BP.Value <= 1030) { bpStr = r.BP.Value.ToString("F2", CultureInfo.InvariantCulture); } } 
+                    
+                    writer.WriteLine($"{r.CAT};{r.SAC};{r.SIC};{r.Time};{latStr};{lonStr};" + $"{r.Mode3A};{r.FL};{altStr};{r.TA};{r.TI};{bpStr};{r.IsOnGround}"); }
 
             }
 
@@ -200,9 +213,9 @@ namespace AsterixDecoder.Models.CAT021
 
             if (validRecords.Count > 0)
             {
-                double avgAlt = validRecords.Average(r => r.Real_Altitude_ft);
-                double maxAlt = validRecords.Max(r => r.Real_Altitude_ft);
-                double minAlt = validRecords.Min(r => r.Real_Altitude_ft);
+                double avgAlt = validRecords.Average(r => r.ModeC_Corrected);
+                double maxAlt = validRecords.Max(r => r.ModeC_Corrected);
+                double minAlt = validRecords.Min(r => r.ModeC_Corrected);
 
                 Console.WriteLine($"\nAltitudes (registros válidos):");
                 Console.WriteLine($"  - Promedio: {avgAlt:F0} ft");
