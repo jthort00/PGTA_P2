@@ -24,39 +24,39 @@ namespace AsterixDecoder.Models
             currentByte = 0;
         }
 
+        private List<RawCat021Data> decodedRecords;
         public List<RawCat021Data> Decode()
         {
-            var records = new List<RawCat021Data>();
+	        if (decodedRecords != null)
+		        return decodedRecords;
 
-            while (currentByte < data.Length)
-            {
-	            // Ensure enough bytes for category and length
-	            if (currentByte + 3 >= data.Length) break;
+	        decodedRecords = new List<RawCat021Data>();
 
-	            // Category (should be 21)
-	            byte cat = data[currentByte++];
-	            if (cat != 21)
-		            continue;
+	        while (currentByte < data.Length)
+	        {
+		        if (currentByte + 3 >= data.Length) break;
 
-	            // Record length (2 bytes)
-	            int length = (data[currentByte] << 8) | data[currentByte + 1];
-	            currentByte += 2;
+		        byte cat = data[currentByte++];
+		        if (cat != 21)
+			        continue;
 
-	            int recordEnd = currentByte + length - 3;
-	            if (recordEnd > data.Length) break;
+		        int length = (data[currentByte] << 8) | data[currentByte + 1];
+		        currentByte += 2;
 
-	            // Decode FSPEC + record
-	            var fspec  = ReadFSPEC();
-	            var record = new RawCat021Data();
-	            DecodeRecord(record, fspec, recordEnd);
+		        int recordEnd = currentByte + length - 3;
+		        if (recordEnd > data.Length) break;
 
-                records.Add(record);
-                currentByte = recordEnd;
-            }
+		        var fspec = ReadFSPEC();
+		        var record = new RawCat021Data();
+		        DecodeRecord(record, fspec, recordEnd);
 
-            return records;
-            //Console.WriteLine($"Keeping record: OnGround={record.IsOnGround}, Lat={record.WGS84_Latitude}, Lon={record.WGS84_Longitude}");
+		        decodedRecords.Add(record);
+		        currentByte = recordEnd;
+	        }
+
+	        return decodedRecords;
         }
+
     
         private List<bool> ReadFSPEC()
         {
@@ -112,6 +112,13 @@ namespace AsterixDecoder.Models
 		        record.RC  = (octet1 >> 2) & 0x01;
 		        record.RAB = (octet1 >> 1) & 0x01;
 		        record.TargetReportDescriptor = $"ATP={record.ATP}, ARC={record.ARC}, RC={record.RC}, RAB={record.RAB}";
+		        
+		        if (trdBytes.Count >= 2)
+		        {
+			        byte octet2 = trdBytes[1];
+			        record.GBS = ((octet2 >> 6) & 0x01) == 1; // bit 7
+		        }
+
 		    }
 
 		    // FRN 3 - I021/161 Track Number
@@ -486,60 +493,115 @@ namespace AsterixDecoder.Models
                 if ((b & 0x01) == 0) break; // FX=0
              } while (currentByte < recordEnd);
           }
-
-          // --- FRN 48 – Reserved Expansion Field (REF) ---
+          //Console.WriteLine($"[DEBUG] FSPEC COUNT={fspec.Count}, current index={fspecIndex}");
+          //Console.WriteLine($"[DEBUG] FSPEC bits = {string.Join("", fspec.Select(b => b ? "1" : "0"))}");
+          //Console.WriteLine($"[DEBUG FRN48] fspecIndex={fspecIndex}, fspecCount={fspec.Count}, fspec[{fspecIndex}]={(fspecIndex < fspec.Count ? fspec[fspecIndex] : false)}, currentByte={currentByte}, recordEnd={recordEnd}");
+          
+          // --- FRN 48 – Reserved Expansion Field (REF) - Option A: print whole FRN48 ---
           if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(1, recordEnd))
           {
-              // Llegeixo primer el primer octet de REF, per saber com està el bit de BPS
-              byte refOctet1 = data[currentByte++];
+	          int ref48Start = currentByte;
 
-              // Per your spec: (BPS SelH NAV GAO SGV STA TNH MES)
-              bool bpsPresent = (refOctet1 & 0b1000_0000) != 0;
-              bool fx = (refOctet1 & 0x01) != 0;
+	          // Step 1: Read REF length
+	          byte refLength = data[currentByte++];
+	          int refEnd = currentByte + refLength - 1;
+	          if (refEnd > recordEnd) refEnd = recordEnd;
 
-              while (fx && currentByte < recordEnd)
-              {
-	              byte nextOctet = data[currentByte++];
-	              if ((nextOctet & 0b1000_0000) != 0)
-		              bpsPresent = true;
-	              fx = (nextOctet & 0x01) != 0;
-              }
+	          // Step 2: Read descriptor octets
+	          bool fx = true;
+	          bool bpsPresent = false;
+	          var descriptors = new List<byte>();
 
+	          while (fx && currentByte < refEnd)
+	          {
+		          byte desc = data[currentByte++];
+		          descriptors.Add(desc);
+		          if ((desc & 0x80) != 0) bpsPresent = true; // bit 8 = BPS
+		          fx = (desc & 0x01) != 0; // bit 1 = FX
+	          }
 
-              if (bpsPresent) // Si el bit de BPS està a 1, llegeixo els 2 octets següents (16-13 son palla) / (12-1 són BPS)
-              {
-	              if (CheckBytes(2, recordEnd))
-	              {
-		              ushort raw = (ushort)((data[currentByte] << 8) | data[currentByte + 1]);
-		              currentByte += 2;
-		              ushort bps12bit = (ushort)(raw & 0x0FFF);
-		              double bpsValue = 800 + (bps12bit * 0.1);
+	          // Step 3: Decode BPS if present
+	          if (bpsPresent && currentByte + 1 < refEnd)
+	          {
+		          ushort raw = (ushort)((data[currentByte] << 8) | data[currentByte + 1]);
+		          currentByte += 2;
+		          ushort bps12 = (ushort)(raw & 0x0FFF);
+		          record.BarometricPressureSetting = bps12 == 0 ? 800.0 :
+			          bps12 == 0x0FFF ? 1209.5 :
+			          800.0 + (bps12 * 0.1);
+	          }
 
-		              if (bps12bit == 0)
-		              {
-			              record.BarometricPressureSetting = 800.0;
-			              Console.WriteLine($"[REF/BPS] DECODED: BPS raw=0 -> (<= 800.0 hPa)");
-		              }
-		              else if (bps12bit == 0x0FFF)
-		              {
-			              record.BarometricPressureSetting = 1209.5;
-			              Console.WriteLine($"[REF/BPS] DECODED: BPS raw=4095 -> (>= 1209.5 hPa)");
-		              }
-		              else
-		              {
-			              record.BarometricPressureSetting = bpsValue;
-			              Console.WriteLine(
-				              $"[BPS_FOUND] Found BPS={record.BarometricPressureSetting:F1} | At LAT={record.WGS84_Latitude:F5}, LON={record.WGS84_Longitude:F5}");
-		              }
-	              }
-	              else
-	              {
-		              Console.WriteLine("[REF/BPS] ⚠️ REF indicated BPS, but data ended prematurely.");
-	              }
-              }
+	          // Optional: log raw REF bytes
+	          byte[] refBytes = data.Skip(ref48Start).Take(refEnd - ref48Start).ToArray();
+	          Console.WriteLine($"[FRN48 RAW] bytes: {BitConverter.ToString(refBytes)}");
           }
 		} 
         
+        // Aquest mètode omple els valors de BPS que falten basant-se en els valors coneguts d'altres registres amb la mateixa identificació d'objectiu (basat en correu Marc Ismael)
+        public void FillMissingBPSValues()
+        {
+	        var records = Decode(); // now returns cached list
+
+	        var knownBPS = new Dictionary<string, double>();
+
+	        foreach (var record in records)
+	        {
+		        if (!string.IsNullOrEmpty(record.Target_Identification) && record.BarometricPressureSetting.HasValue)
+		        {
+			        if (!knownBPS.ContainsKey(record.Target_Identification))
+				        knownBPS[record.Target_Identification] = record.BarometricPressureSetting.Value;
+		        }
+	        }
+
+	        foreach (var record in records)
+	        {
+		        if (!record.BarometricPressureSetting.HasValue &&
+		            !string.IsNullOrEmpty(record.Target_Identification) &&
+		            knownBPS.TryGetValue(record.Target_Identification, out double inferredBPS))
+		        {
+			        record.BarometricPressureSetting = inferredBPS;
+		        }
+	        }
+        }
+
+
+		public void PrintFSPECMap()
+		{
+			var records = Decode();
+			int recordNum = 0;
+
+			foreach (var record in records)
+			{
+				Console.WriteLine($"--- Record #{++recordNum} ---");
+
+				// Re-read FSPEC bits for this record
+				int localByte = 3; // Skip CAT and LEN (first 3 bytes)
+				var fspecBits = new List<bool>();
+				bool hasExtension = true;
+
+				while (hasExtension && localByte < data.Length)
+				{
+					byte octet = data[localByte++];
+					for (int i = 7; i >= 1; i--)
+						fspecBits.Add((octet & (1 << i)) != 0);
+					hasExtension = (octet & 0x01) != 0;
+				}
+
+				for (int i = 0; i < fspecBits.Count; i++)
+				{
+					string status = fspecBits[i] ? "✅" : "❌";
+					Console.WriteLine($"FRN {i + 1:D2}: {status}");
+				}
+
+				Console.WriteLine($"FSPEC length: {fspecBits.Count} bits");
+				Console.WriteLine($"FRN 48 present: {(fspecBits.Count >= 48 && fspecBits[47] ? "✅ YES" : "❌ NO")}");
+				Console.WriteLine($"BPS value: {(record.BarometricPressureSetting.HasValue ? $"{record.BarometricPressureSetting:F1} hPa" : "(not present)")}");
+				Console.WriteLine();
+			}
+
+			Console.WriteLine($"Total records decoded: {records.Count}");
+		}
+
         
         // Em faig aquests mètodes per poder decodificar la FRN29 amb els noms que em dona problema per captar els números dels callsigns
         private static string DecodeTargetIdentification(byte[] data, int startIndex, int length)
@@ -607,6 +669,31 @@ namespace AsterixDecoder.Models
 
 	        return sb.ToString().Trim();
         }
+        
+        public void PrintBPSValues()
+        {
+	        var records = Decode();
+	        int index = 0;
+
+	        foreach (var record in records)
+	        {
+		        Console.WriteLine($"--- Record #{++index} ---");
+
+		        if (record.BarometricPressureSetting.HasValue)
+		        {
+			        Console.WriteLine($"BPS: {record.BarometricPressureSetting:F1} hPa");
+		        }
+		        else
+		        {
+			        Console.WriteLine("BPS: (not present)");
+		        }
+
+		        Console.WriteLine();
+	        }
+
+	        Console.WriteLine($"Total records decoded: {records.Count}");
+        }
+
     }
 }
 

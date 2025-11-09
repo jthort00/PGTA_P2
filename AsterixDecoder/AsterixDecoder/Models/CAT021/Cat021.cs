@@ -63,7 +63,7 @@ namespace AsterixDecoder.Models.CAT021
             TI = rawData.Target_Identification ?? "N/A";
 
             // Barometric Pressure
-            BP = BP = rawData.BarometricPressureSetting;
+            BP = rawData.BarometricPressureSetting;
             //Console.WriteLine($"Debug: BP={BP}"); 
 
             // Determinar si está en tierra (ATP: 0=unknown, 1=ADS-B, 2=ADS-B+ES, 3=ADS-B+ES+extended)
@@ -96,7 +96,13 @@ namespace AsterixDecoder.Models.CAT021
             // Convert raw counts to Mode-C altitude
             double modeC_alt_ft = rawData.FlightLevel_Raw * 0.25;
             
-            if (modeC_alt_ft < -2.0)
+            if (rawData.GBS || rawData.ATP == 2)
+            {
+                if (modeC_alt_ft > 150.0)
+                    modeC_alt_ft = 0.0;
+            }
+            
+            if (modeC_alt_ft < -2.0 || modeC_alt_ft > 200.0)
                 modeC_alt_ft = 0.0;
 
             FL = modeC_alt_ft;
@@ -120,7 +126,6 @@ namespace AsterixDecoder.Models.CAT021
             else if (lastKnownBP.HasValue)
                 qnhToUse = lastKnownBP.Value;
 
-            // 5️⃣ Compute Mode-C corrected altitude
             if (FL < 60.0)
             {
                 // Below TA -> apply QNH correction
@@ -132,32 +137,33 @@ namespace AsterixDecoder.Models.CAT021
                 ModeC_Corrected = 100.0 * FL;
             }
         }
-        
+
         /// <summary>
         /// Determina si el target está en tierra basándose en los datos disponibles
         /// </summary>
         private bool DetermineGroundStatus(RawCat021Data rawData)
         {
-            // ATP (Address Type): valores típicos
-            // 0 = unknown
-            // 1 = ADS-B with ICAO 24-bit address
-            // 2 = ADS-B with surface vehicle address
-            // 3 = ADS-B with anonymous address
+            // 1. Trust Ground Bit if present
+            if (rawData.GBS)
+                return true;
 
-            // Si ATP indica surface vehicle, está en tierra
+            // 2. ATP = 2 means surface vehicle
             if (rawData.ATP == 2)
                 return true;
 
-            // Si la altitud es muy baja (< 100 ft) y velocidad baja, probablemente en tierra
-            if ((rawData.FlightLevel_Raw*0.25) <= 25.25)
+            // 3. Flight Level clearly indicates ground
+            double fl = rawData.FlightLevel_Raw * 0.25;
+            if (rawData.FlightLevel_Raw == 0 || fl <= 14.0)
                 return true;
 
+            // 4. Otherwise, assume airborne
             return false;
         }
 
-        /// <summary>
-        /// Verifica si el registro cumple con los filtros del FIR de Barcelona
-        /// </summary>
+
+        // <summary>
+        // Verifica si el registro cumple con los filtros del FIR de Barcelona
+        // </summary>
         public bool IsWithinBarcelonaFIR()
         {
             return LAT > 40.9 && LAT < 41.7 && LON > 1.5 && LON < 2.6;

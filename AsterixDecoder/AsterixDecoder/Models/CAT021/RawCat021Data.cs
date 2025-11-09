@@ -17,6 +17,8 @@ namespace AsterixDecoder.Models.CAT021
         public int ARC { get; set; }
         public int RC { get; set; }
         public int RAB { get; set; }
+        public bool GBS { get; set; }
+
 
         // FRN 7 - I021/131
         public double WGS84_Latitude { get; set; }
