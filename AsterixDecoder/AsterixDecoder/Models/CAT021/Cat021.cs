@@ -174,7 +174,7 @@ namespace AsterixDecoder.Models.CAT021
         /// </summary>
         public bool IsValid()
         {
-            return !IsOnGround && IsWithinBarcelonaFIR();
+            return !IsOnGround;
         }
 
         /// <summary>

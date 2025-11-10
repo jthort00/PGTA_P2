@@ -5,10 +5,6 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Collections;
-using System.Collections.Generic;
-
-
 
 namespace AsterixDecoder.Models.CAT021
 {
@@ -142,7 +138,6 @@ namespace AsterixDecoder.Models.CAT021
                 Console.WriteLine();
             }
         }
-        
 
         /// <summary>
         /// Exporta la lista a un archivo CSV
@@ -153,7 +148,23 @@ namespace AsterixDecoder.Models.CAT021
             {
                 // Encabezados
                 writer.WriteLine("CAT;SAC;SIC;Time;LAT;LON;Mode3A_Code;FL;ModeC_Corrected;TA;TI;BP;OnGround");
-                
+                var cultureEs = new CultureInfo("es-ES");
+
+                foreach (var r in records)
+                {
+                    string latStr = r.LAT.ToString("F6", cultureEs);
+                    string lonStr = r.LON.ToString("F6", cultureEs);
+                    string altStr = r.ModeC_Corrected.ToString("F0", cultureEs);
+                    string bpStr = "NV";
+
+                    if (r.BP.HasValue && r.BP.Value >= 1000 && r.BP.Value <= 1030)
+                        bpStr = r.BP.Value.ToString("F2", cultureEs);
+
+                    writer.WriteLine($"{r.CAT};{r.SAC};{r.SIC};{r.Time};{latStr};{lonStr};" +
+                                     $"{r.Mode3A};{r.FL};{altStr};{r.TA};{r.TI};{bpStr};{r.IsOnGround}");
+                }
+
+
                 // Datos
                 foreach (var r in records) 
                 { string latStr = r.LAT.ToString("F6", CultureInfo.InvariantCulture); 
@@ -161,7 +172,7 @@ namespace AsterixDecoder.Models.CAT021
                     string altStr = r.ModeC_Corrected.ToString("F0", CultureInfo.InvariantCulture); 
                     string bpStr = "NV"; 
                     // default if value is out of range or null
-                    if (r.BP.HasValue) { if (r.BP.Value >= 1000.0 && r.BP.Value <= 1030.0) { bpStr = r.BP.Value.ToString("F2", CultureInfo.InvariantCulture); } } 
+                    if (r.BP.HasValue) { if (r.BP.Value >= 1000 && r.BP.Value <= 1030) { bpStr = r.BP.Value.ToString("F2", CultureInfo.InvariantCulture); } } 
                     
                     writer.WriteLine($"{r.CAT};{r.SAC};{r.SIC};{r.Time};{latStr};{lonStr};" + $"{r.Mode3A};{r.FL};{altStr};{r.TA};{r.TI};{bpStr};{r.IsOnGround}"); }
 

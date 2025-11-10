@@ -1,25 +1,31 @@
 {
   "format": 1,
   "restore": {
-    "/Users/marcrodulfo/Documents/GitHub/PGTA_P2/AsterixDecoder/AsterixDecoderApp/AsterixDecoderApp.csproj": {}
+    "C:\\Users\\fedep\\source\\repos\\jthort00\\PGTA_P2\\AsterixDecoder\\AsterixDecoderApp\\AsterixDecoderApp.csproj": {}
   },
   "projects": {
-    "/Users/marcrodulfo/Documents/GitHub/PGTA_P2/AsterixDecoder/AsterixDecoderApp/AsterixDecoderApp.csproj": {
+    "C:\\Users\\fedep\\source\\repos\\jthort00\\PGTA_P2\\AsterixDecoder\\AsterixDecoderApp\\AsterixDecoderApp.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/Users/marcrodulfo/Documents/GitHub/PGTA_P2/AsterixDecoder/AsterixDecoderApp/AsterixDecoderApp.csproj",
+        "projectUniqueName": "C:\\Users\\fedep\\source\\repos\\jthort00\\PGTA_P2\\AsterixDecoder\\AsterixDecoderApp\\AsterixDecoderApp.csproj",
         "projectName": "AsterixDecoderApp",
-        "projectPath": "/Users/marcrodulfo/Documents/GitHub/PGTA_P2/AsterixDecoder/AsterixDecoderApp/AsterixDecoderApp.csproj",
-        "packagesPath": "/Users/marcrodulfo/.nuget/packages/",
-        "outputPath": "/Users/marcrodulfo/Documents/GitHub/PGTA_P2/AsterixDecoder/AsterixDecoderApp/obj/",
+        "projectPath": "C:\\Users\\fedep\\source\\repos\\jthort00\\PGTA_P2\\AsterixDecoder\\AsterixDecoderApp\\AsterixDecoderApp.csproj",
+        "packagesPath": "C:\\Users\\fedep\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\fedep\\source\\repos\\jthort00\\PGTA_P2\\AsterixDecoder\\AsterixDecoderApp\\obj\\",
         "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
         "configFilePaths": [
-          "/Users/marcrodulfo/.nuget/NuGet/NuGet.Config"
+          "C:\\Users\\fedep\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
           "net8.0-windows"
         ],
         "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -37,7 +43,8 @@
           "enableAudit": "true",
           "auditLevel": "low",
           "auditMode": "direct"
-        }
+        },
+        "SdkAnalysisLevel": "9.0.300"
       },
       "frameworks": {
         "net8.0-windows7.0": {
@@ -61,7 +68,7 @@
               "privateAssets": "none"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/8.0.414/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.306/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

@@ -19,6 +19,9 @@ namespace AsterixDecoder.Models.CAT048
         // FRN 2 - I048/140 - Time of Day
         public TimeSpan? TimeOfDay { get; set; }
 
+        // NUEVO: valor numérico del TIP/Descriptor de I048/020
+        public int TypDesc { get; set; }
+
         // FRN 3 - I048/020 - Target Report Descriptor
         public string TargetReportDescriptor { get; set; }
         public int TargetType { get; set; }

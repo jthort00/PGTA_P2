@@ -38,6 +38,11 @@ namespace AsterixDecoder.Models.CAT048
         public double? GSSD { get; set; }       
         public double? HDG2 { get; set; }       
         
+        // Atributo adicional: I048/020.typ (0..7)
+        public int? TypDesc { get; set; }
+
+        public bool? RABPresent { get; set; }
+
         // Campos de I048/230 - Communications/ACAS Capability
         public int? COM { get; set; }
         public int? STAT_230 { get; set; }
@@ -108,6 +113,12 @@ namespace AsterixDecoder.Models.CAT048
 
             // Status
             Stat = string.IsNullOrWhiteSpace(rawData.TargetReportDescriptor) ? null : rawData.TargetReportDescriptor;
+
+            // NUEVO: exponer el valor numérico de I048/020.typ
+            TypDesc = rawData.TargetType;
+
+            // RAB (I048/020) - indicador de transponder fijo
+            RABPresent = rawData.RABPresent;
 
             // Target Address (TA) - Aircraft Address
             TA = string.IsNullOrWhiteSpace(rawData.AircraftAddress) ? null : rawData.AircraftAddress;
@@ -275,6 +286,16 @@ namespace AsterixDecoder.Models.CAT048
                 if (bds60.InertialVerticalVelocity != 0)
                     IVV = bds60.InertialVerticalVelocity;
             }
+        }
+
+        /// <summary>
+        /// Verifica si el registro CAT048 se encuentra dentro del filtro geográfico de Barcelona FIR
+        /// 40.9º N < lat < 41.7º N y 1.5º E < lon < 2.6º E
+        /// </summary>
+        public bool IsWithinBarcelonaFIR()
+        {
+            if (!LAT.HasValue || !LON.HasValue) return false;
+            return LAT.Value > 40.9 && LAT.Value < 41.7 && LON.Value > 1.5 && LON.Value < 2.6;
         }
 
         public override string ToString()

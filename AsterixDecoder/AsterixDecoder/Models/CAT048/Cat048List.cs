@@ -48,6 +48,59 @@ namespace AsterixDecoder.Models.CAT048
         public List<Cat048> GetAll() => records;
 
         /// <summary>
+        /// Filtro de "blancos puros" Mode S según I048/020: mantiene solo typ ∈ {4,5,6,7}.
+        /// Input: lista de Cat048; Output: nueva lista filtrada.
+        /// No modifica la lista original.
+        /// </summary>
+        public static List<Cat048> FilterPureModeS(IEnumerable<Cat048> input)
+        {
+            if (input == null) return new List<Cat048>();
+            return input
+                .Where(r => r != null && r.TypDesc.HasValue && r.TypDesc.Value >= 4)
+                .ToList();
+        }
+
+        /// <summary>
+        /// Filtro de transponder fijo: elimina aquellos registros con RABPresent = 1 (true).
+        /// Input: lista de Cat048; Output: nueva lista sin los que tienen RAB activo.
+        /// No modifica la lista original.
+        /// </summary>
+        public static List<Cat048> FilterFixedTransponder(IEnumerable<Cat048> input)
+        {
+            if (input == null) return new List<Cat048>();
+            // Se conservan elementos donde RABPresent no sea true (false o null)
+            return input
+                .Where(r => r != null && r.RABPresent != true)
+                .ToList();
+        }
+
+        /// <summary>
+        /// Filtro geográfico por caja (lat/lon). Devuelve solo los CAT048 con LAT y LON dentro del rectángulo definido
+        /// por (lat_1, lon_1) y (lat_2, lon_2). Límites inclusivos. No modifica la lista original.
+        /// </summary>
+        /// <param name="input">Lista de entradas CAT048.</param>
+        /// <param name="lat_1">Latitud del primer vértice.</param>
+        /// <param name="lon_1">Longitud del primer vértice.</param>
+        /// <param name="lat_2">Latitud del vértice opuesto.</param>
+        /// <param name="lon_2">Longitud del vértice opuesto.</param>
+        /// <returns>Nueva lista filtrada.</returns>
+        public static List<Cat048> FilterGeographic(IEnumerable<Cat048> input, double lat_1, double lon_1, double lat_2, double lon_2)
+        {
+            if (input == null) return new List<Cat048>();
+
+            double minLat = Math.Min(lat_1, lat_2);
+            double maxLat = Math.Max(lat_1, lat_2);
+            double minLon = Math.Min(lon_1, lon_2);
+            double maxLon = Math.Max(lon_1, lon_2);
+
+            return input
+                .Where(r => r != null && r.LAT.HasValue && r.LON.HasValue
+                            && r.LAT.Value >= minLat && r.LAT.Value <= maxLat
+                            && r.LON.Value >= minLon && r.LON.Value <= maxLon)
+                .ToList();
+        }
+
+        /// <summary>
         /// Filtra registros por Aircraft Address
         /// </summary>
         public List<Cat048> FilterByAircraftAddress(string address)
@@ -184,8 +237,8 @@ namespace AsterixDecoder.Models.CAT048
             // Header - Columnas según especificación
             csv.AppendLine("CAT\tSAC\tSIC\tTime\tLat\tLon\tH_wgs\th_ft\tRHO\tTHETA\tMode_3A\tFlight_level\tModeC_corrected\tTarget_address\tTarget_identification\tMode_S\tBP\tRA\tTTA\tGS\tTAR\tTAS\tHDG\tIAS\tMACH\tBAR\tIVV\tTrack_number\tGround_speedkt\tHeading\tSAT230");
             
-            // Data rows
-            foreach (var r in records)
+            // Data rows (solo dentro del FIR Barcelona)
+            foreach (var r in records.Where(x => x != null && x.IsWithinBarcelonaFIR()))
             {
                 // Construir campo Mode_S (BDS registers presentes)
                 string modeS = BuildModeSField(r);

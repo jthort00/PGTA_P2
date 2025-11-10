@@ -132,6 +132,7 @@ namespace AsterixDecoder.Models.CAT048
 
                 trd.Append($"{alertStatus}, {radarStatus}, {groundStatus}");
 
+                record.TypDesc = typ;
                 record.TargetType = typ;
                 record.SPIPresent = spi;
                 record.RABPresent = rab;
@@ -435,7 +436,21 @@ namespace AsterixDecoder.Models.CAT048
                 record.AIC = aic;
                 record.B1A = b1a;
                 record.B1B = b1b;
-            }
+
+                // Actualizar la descripción del Target Report Descriptor desde I048/230 (STAT - Flight Status)
+                // Sobrescribe cualquier texto previo generado desde I048/020 para cumplir el requisito.
+                record.TargetReportDescriptor = stat switch
+                {
+                    0 => "No alert, no SPI, aircraft airborne",
+                    1 => "No alert, no SPI, aircraft on ground",
+                    2 => "Alert, no SPI, aircraft airborne",
+                    3 => "Alert, no SPI, aircraft on ground",
+                    4 => "Alert, SPI, aircraft airborne or on ground",
+                    5 => "No alert, SPI, aircraft airborne or on ground",
+                    6 => "Not assigned",
+                    7 => "Unknown",
+                    _ => "Unknown"
+                };
 			
 			//// FX
    //         if (fspecIndex < fspec.Count && fspec[fspecIndex++])
@@ -482,6 +497,7 @@ namespace AsterixDecoder.Models.CAT048
             if (fspecIndex < fspec.Count && fspec[fspecIndex++])
             {
                 // Cuarto octeto FSPEC
+            }
             }
         }
 
