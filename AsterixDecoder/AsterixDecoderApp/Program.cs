@@ -1,4 +1,8 @@
-namespace AsterixDecoderApp
+namespace AsterixDecoderApp;
+using System;
+
+    
+        
 {
     internal static class Program
     {

@@ -532,8 +532,8 @@ namespace AsterixDecoder.Models
 	          }
 
 	          // Optional: log raw REF bytes
-	          byte[] refBytes = data.Skip(ref48Start).Take(refEnd - ref48Start).ToArray();
-	          Console.WriteLine($"[FRN48 RAW] bytes: {BitConverter.ToString(refBytes)}");
+	          //byte[] refBytes = data.Skip(ref48Start).Take(refEnd - ref48Start).ToArray();
+	          //Console.WriteLine($"[FRN48 RAW] bytes: {BitConverter.ToString(refBytes)}");
           }
 		} 
         
