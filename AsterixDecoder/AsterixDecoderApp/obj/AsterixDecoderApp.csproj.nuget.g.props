@@ -13,7 +13,7 @@
     <SourceRoot Include="/Users/marcrodulfo/.nuget/packages/" />
   </ItemGroup>
   <PropertyGroup Condition=" '$(ExcludeRestorePackageImports)' != 'true' ">
-    <PkgSentry Condition=" '$(PkgSentry)' == '' ">C:\Users\fedep\.nuget\packages\sentry\4.13.0</PkgSentry>
-    <PkgVisioForge_DotNet_Core Condition=" '$(PkgVisioForge_DotNet_Core)' == '' ">C:\Users\fedep\.nuget\packages\visioforge.dotnet.core\2025.10.1</PkgVisioForge_DotNet_Core>
+    <PkgSentry Condition=" '$(PkgSentry)' == '' ">/Users/marcrodulfo/.nuget/packages/sentry/4.13.0</PkgSentry>
+    <PkgVisioForge_DotNet_Core Condition=" '$(PkgVisioForge_DotNet_Core)' == '' ">/Users/marcrodulfo/.nuget/packages/visioforge.dotnet.core/2025.10.1</PkgVisioForge_DotNet_Core>
   </PropertyGroup>
 </Project>

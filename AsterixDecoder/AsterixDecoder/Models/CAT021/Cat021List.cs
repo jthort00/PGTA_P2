@@ -13,7 +13,10 @@ namespace AsterixDecoder.Models.CAT021
     /// </summary>
     public class Cat021List
     {
-        private List<Cat021> records;
+        private List<Cat021> records = new List<Cat021>();
+
+        // Exponer la lista como IEnumerable para poder recorrerla
+        public IEnumerable<Cat021> Records => records;
 
         public Cat021List()
         {
@@ -81,9 +84,9 @@ namespace AsterixDecoder.Models.CAT021
         public List<string> GetUniqueTargetAddresses()
         {
             return records.Where(r => r.TA != "N/A")
-                         .Select(r => r.TA)
-                         .Distinct()
-                         .ToList();
+                .Select(r => r.TA)
+                .Distinct()
+                .ToList();
         }
 
         /// <summary>
@@ -92,9 +95,9 @@ namespace AsterixDecoder.Models.CAT021
         public List<string> GetUniqueTargetIdentifications()
         {
             return records.Where(r => r.TI != "N/A")
-                         .Select(r => r.TI)
-                         .Distinct()
-                         .ToList();
+                .Select(r => r.TI)
+                .Distinct()
+                .ToList();
         }
 
         /// <summary>
@@ -104,6 +107,71 @@ namespace AsterixDecoder.Models.CAT021
         {
             records = records.Where(r => !r.IsOnGround && r.IsWithinBarcelonaFIR()).ToList();
         }
+
+        public void InferMissingBP()
+        {
+            var bpByTI = new Dictionary<string, double>();
+
+            foreach (var r in records)
+            {
+                if (!string.IsNullOrEmpty(r.TI) && r.BP.HasValue)
+                {
+                    double bps = r.BP.Value;
+
+                    if (bps >= 1000 && bps <= 1030)
+                    {
+                        if (!bpByTI.ContainsKey(r.TI))
+                            bpByTI[r.TI] = bps;
+                    }
+                }
+            }
+
+            foreach (var r in records)
+            {
+                if (!r.BP.HasValue &&
+                    !string.IsNullOrEmpty(r.TI) &&
+                    bpByTI.TryGetValue(r.TI, out double inferred))
+                {
+                    r.BP = inferred;
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Recalcula ModeC_Corrected después de modificar BP.
+        /// </summary>
+        public void RecomputeCorrectedAltitudes(double qnhDefault = 1013.25)
+        {
+            foreach (var r in records)
+            {
+                // 1️⃣ Si está en tierra → altitud 0
+                if (r.IsOnGround)
+                {
+                    r.FL = 0;
+                    r.ModeC_Corrected = 0;
+                    continue;
+                }
+
+                // 2️⃣ Seleccionar el QNH
+                double qnhToUse = r.BP.HasValue ? r.BP.Value : qnhDefault;
+
+                // 3️⃣ Calcular Mode C corregido
+                if (r.FL < 60.0)
+                {
+                    r.ModeC_Corrected = (100.0 * r.FL) + (qnhToUse - 1013.25) * 30.0;
+
+                    // 4️⃣ Evitar negativos residuales por fluctuaciones QNH
+                    if (r.ModeC_Corrected < 0)
+                        r.ModeC_Corrected = 0;
+                }
+                else
+                {
+                    r.ModeC_Corrected = 100.0 * r.FL;
+                }
+            }
+        }
+
+
 
         /// <summary>
         /// Imprime todos los registros en formato de lista
@@ -144,54 +212,37 @@ namespace AsterixDecoder.Models.CAT021
         /// </summary>
         public void ExportToCSV(string filePath)
         {
+            // Asegurar BP correcto antes de exportar
+            InferMissingBP();
+            RecomputeCorrectedAltitudes();
+
             using (var writer = new StreamWriter(filePath, false, Encoding.UTF8))
             {
-                // Encabezados
                 writer.WriteLine("CAT;SAC;SIC;Time;LAT;LON;Mode3A_Code;FL;ModeC_Corrected;TA;TI;BP;OnGround");
-                var cultureEs = new CultureInfo("es-ES");
 
-                foreach (var r in records)
+                foreach (var r in records.Where(r => !r.IsOnGround && r.TA != "7777"))
                 {
-                    string latStr = r.LAT.ToString("F6", cultureEs);
-                    string lonStr = r.LON.ToString("F6", cultureEs);
-                    string altStr = r.ModeC_Corrected.ToString("F0", cultureEs);
+                    string latStr = r.LAT.ToString("F6", CultureInfo.InvariantCulture);
+                    string lonStr = r.LON.ToString("F6", CultureInfo.InvariantCulture);
+                    string altStr = r.ModeC_Corrected.ToString("F0", CultureInfo.InvariantCulture);
+
                     string bpStr = "NV";
-
                     if (r.BP.HasValue && r.BP.Value >= 1000 && r.BP.Value <= 1030)
-                        bpStr = r.BP.Value.ToString("F2", cultureEs);
+                        bpStr = r.BP.Value.ToString("F2", CultureInfo.InvariantCulture);
 
-                    writer.WriteLine($"{r.CAT};{r.SAC};{r.SIC};{r.Time};{latStr};{lonStr};" +
-                                     $"{r.Mode3A};{r.FL};{altStr};{r.TA};{r.TI};{bpStr};{r.IsOnGround}");
+                    writer.WriteLine(
+                        $"{r.CAT};{r.SAC};{r.SIC};{r.Time};{latStr};{lonStr};" +
+                        $"{r.Mode3A};{r.FL};{altStr};{r.TA};{r.TI};{bpStr};{r.IsOnGround}"
+                    );
                 }
-
-
-                // Datos
-                foreach (var r in records) 
-                { string latStr = r.LAT.ToString("F6", CultureInfo.InvariantCulture); 
-                    string lonStr = r.LON.ToString("F6", CultureInfo.InvariantCulture); 
-                    string altStr = r.ModeC_Corrected.ToString("F0", CultureInfo.InvariantCulture); 
-                    string bpStr = "NV"; 
-                    // default if value is out of range or null
-                    if (r.BP.HasValue) { if (r.BP.Value >= 1000 && r.BP.Value <= 1030) { bpStr = r.BP.Value.ToString("F2", CultureInfo.InvariantCulture); } } 
-                    
-                    writer.WriteLine($"{r.CAT};{r.SAC};{r.SIC};{r.Time};{latStr};{lonStr};" + $"{r.Mode3A};{r.FL};{altStr};{r.TA};{r.TI};{bpStr};{r.IsOnGround}"); }
-
             }
-
-            //Console.WriteLine($"\nArchivo CSV exportado: {filePath}");
         }
 
-        /// <summary>
-        /// Limpia la lista
-        /// </summary>
         public void Clear()
         {
             records.Clear();
         }
 
-        /// <summary>
-        /// Muestra estadísticas de la lista
-        /// </summary>
         public void PrintStatistics()
         {
             Console.WriteLine("\n=== ESTADÍSTICAS CAT021 ===");
@@ -203,10 +254,10 @@ namespace AsterixDecoder.Models.CAT021
             Console.WriteLine($"En vuelo: {airborne}");
 
             var validRecords = records.Where(r => r.IsValid()).ToList();
-            Console.WriteLine($"Registros válidos (airborne + FIR BCN): {validRecords.Count}");
+            Console.WriteLine($"Registros válidos: {validRecords.Count}");
 
             var uniqueAddresses = GetUniqueTargetAddresses();
-            Console.WriteLine($"Aeronaves únicas (Target Address): {uniqueAddresses.Count}");
+            Console.WriteLine($"Aeronaves únicas: {uniqueAddresses.Count}");
 
             var uniqueIdentifications = GetUniqueTargetIdentifications();
             Console.WriteLine($"Identificaciones únicas: {uniqueIdentifications.Count}");
@@ -217,7 +268,7 @@ namespace AsterixDecoder.Models.CAT021
                 double maxAlt = validRecords.Max(r => r.ModeC_Corrected);
                 double minAlt = validRecords.Min(r => r.ModeC_Corrected);
 
-                Console.WriteLine($"\nAltitudes (registros válidos):");
+                Console.WriteLine($"\nAltitudes (válidos):");
                 Console.WriteLine($"  - Promedio: {avgAlt:F0} ft");
                 Console.WriteLine($"  - Máxima: {maxAlt:F0} ft");
                 Console.WriteLine($"  - Mínima: {minAlt:F0} ft");

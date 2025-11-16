@@ -1,36 +1,30 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\fedep\\source\\repos\\jthort00\\PGTA_P2\\AsterixDecoder\\AsterixDecoderApp\\AsterixDecoderApp.csproj": {}
+    "/Users/marcrodulfo/Documents/GitHub/PGTA_P2/AsterixDecoder/AsterixDecoderApp/AsterixDecoderApp.csproj": {}
   },
   "projects": {
-    "C:\\Users\\fedep\\source\\repos\\jthort00\\PGTA_P2\\AsterixDecoder\\AsterixDecoderApp\\AsterixDecoderApp.csproj": {
+    "/Users/marcrodulfo/Documents/GitHub/PGTA_P2/AsterixDecoder/AsterixDecoder/AsterixDecoder.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\fedep\\source\\repos\\jthort00\\PGTA_P2\\AsterixDecoder\\AsterixDecoderApp\\AsterixDecoderApp.csproj",
-        "projectName": "AsterixDecoderApp",
-        "projectPath": "C:\\Users\\fedep\\source\\repos\\jthort00\\PGTA_P2\\AsterixDecoder\\AsterixDecoderApp\\AsterixDecoderApp.csproj",
-        "packagesPath": "C:\\Users\\fedep\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\fedep\\source\\repos\\jthort00\\PGTA_P2\\AsterixDecoder\\AsterixDecoderApp\\obj\\",
+        "projectUniqueName": "/Users/marcrodulfo/Documents/GitHub/PGTA_P2/AsterixDecoder/AsterixDecoder/AsterixDecoder.csproj",
+        "projectName": "AsterixDecoder",
+        "projectPath": "/Users/marcrodulfo/Documents/GitHub/PGTA_P2/AsterixDecoder/AsterixDecoder/AsterixDecoder.csproj",
+        "packagesPath": "/Users/marcrodulfo/.nuget/packages/",
+        "outputPath": "/Users/marcrodulfo/Documents/GitHub/PGTA_P2/AsterixDecoder/AsterixDecoder/obj/",
         "projectStyle": "PackageReference",
-        "fallbackFolders": [
-          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
-        ],
         "configFilePaths": [
-          "C:\\Users\\fedep\\AppData\\Roaming\\NuGet\\NuGet.Config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+          "/Users/marcrodulfo/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
-          "net8.0-windows"
+          "net8.0"
         ],
         "sources": {
-          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
-          "net8.0-windows7.0": {
-            "targetAlias": "net8.0-windows",
+          "net8.0": {
+            "targetAlias": "net8.0",
             "projectReferences": {}
           }
         },
@@ -43,8 +37,87 @@
           "enableAudit": "true",
           "auditLevel": "low",
           "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "Accord": {
+              "target": "Package",
+              "version": "[3.8.0, )"
+            },
+            "Accord.Math": {
+              "target": "Package",
+              "version": "[3.8.0, )"
+            },
+            "VisioForge.DotNet.Core": {
+              "target": "Package",
+              "version": "[2025.10.1, )"
+            },
+            "VisioForge.Libs.External": {
+              "target": "Package",
+              "version": "[2025.1.9, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/8.0.414/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "/Users/marcrodulfo/Documents/GitHub/PGTA_P2/AsterixDecoder/AsterixDecoderApp/AsterixDecoderApp.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/Users/marcrodulfo/Documents/GitHub/PGTA_P2/AsterixDecoder/AsterixDecoderApp/AsterixDecoderApp.csproj",
+        "projectName": "AsterixDecoderApp",
+        "projectPath": "/Users/marcrodulfo/Documents/GitHub/PGTA_P2/AsterixDecoder/AsterixDecoderApp/AsterixDecoderApp.csproj",
+        "packagesPath": "/Users/marcrodulfo/.nuget/packages/",
+        "outputPath": "/Users/marcrodulfo/Documents/GitHub/PGTA_P2/AsterixDecoder/AsterixDecoderApp/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/Users/marcrodulfo/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0-windows"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
         },
-        "SdkAnalysisLevel": "9.0.300"
+        "frameworks": {
+          "net8.0-windows7.0": {
+            "targetAlias": "net8.0-windows",
+            "projectReferences": {
+              "/Users/marcrodulfo/Documents/GitHub/PGTA_P2/AsterixDecoder/AsterixDecoder/AsterixDecoder.csproj": {
+                "projectPath": "/Users/marcrodulfo/Documents/GitHub/PGTA_P2/AsterixDecoder/AsterixDecoder/AsterixDecoder.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
       },
       "frameworks": {
         "net8.0-windows7.0": {
@@ -68,7 +141,7 @@
               "privateAssets": "none"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.306/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/8.0.414/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

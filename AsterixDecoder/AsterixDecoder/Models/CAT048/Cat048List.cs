@@ -9,16 +9,11 @@ namespace AsterixDecoder.Models.CAT048
     /// </summary>
     public class Cat048List
     {
-        private List<Cat048> records;
+        private List<Cat048> records = new List<Cat048>();
 
-        public Cat048List()
-        {
-            records = new List<Cat048>();
-        }
-
-        /// <summary>
-        /// Añade un registro CAT048 a la lista
-        /// </summary>
+        // Exponer la lista como IEnumerable para poder recorrerla
+        public IEnumerable<Cat048> Records => records;
+            
         public void Add(Cat048 record)
         {
             records.Add(record);

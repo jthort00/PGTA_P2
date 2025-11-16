@@ -528,8 +528,8 @@ namespace AsterixDecoder.Models
 		              else
 		              {
 			              record.BarometricPressureSetting = bpsValue;
-			              Console.WriteLine(
-				              $"[BPS_FOUND] Found BPS={record.BarometricPressureSetting:F1} | At LAT={record.WGS84_Latitude:F5}, LON={record.WGS84_Longitude:F5}");
+			              //Console.WriteLine(
+				              //$"[BPS_FOUND] Found BPS={record.BarometricPressureSetting:F1} | At LAT={record.WGS84_Latitude:F5}, LON={record.WGS84_Longitude:F5}");
 		              }
 	              }
 	              else
