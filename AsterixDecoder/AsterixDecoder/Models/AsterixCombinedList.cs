@@ -24,6 +24,26 @@ namespace AsterixDecoder.Models
         }
 
         public int Count => cat048List.Count + cat021List.Count;
+        
+        private DateTime ParseTimeSafe(string t)
+        {
+            if (string.IsNullOrEmpty(t))
+                return DateTime.MaxValue;
+
+            // Convierte "HH:mm:ss:fff" → "HH:mm:ss.fff"
+            int lastColon = t.LastIndexOf(':');
+            if (lastColon > 0)
+                t = t[..lastColon] + "." + t[(lastColon + 1)..];
+
+            return DateTime.TryParseExact(t,
+                "HH:mm:ss.fff",
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.None,
+                out var dt)
+                ? dt
+                : DateTime.MaxValue;
+        }
+
 
         public string ExportCombinedToCSV()
         {
@@ -33,36 +53,37 @@ namespace AsterixDecoder.Models
             // Cabecera CSV
             sb.AppendLine("CAT;SAC;SIC;Time;Latitude;Longitude;h_wgs84;h_ft;RHO;THETA;Mode3A;Flight_Level;ModeC_Corrected;TA;TI;Mode_S;BP;RA;TTA;GS;TAR;TAS;HDG;IAS;MACH;BAR;IVV;Track_number;Ground_Speedkt;Heading;STAT230");
 
-            // Combinar registros
-            var allRecords = new List<object>();
-            allRecords.AddRange(cat048List.Records.Cast<object>());
-            allRecords.AddRange(
-                cat021List.Records.Where(r =>
-                    !r.IsOnGround &&
-                    r.Mode3A != "7777" &&
-                    !string.IsNullOrEmpty(r.TI) &&
-                    !(char.IsDigit(r.TI[0]) || r.TI.Length == 3)
-                ).Cast<object>()
-            );
+            // 1️⃣ CREAR LISTA UNIFICADA PARA ORDENAR
+            var unified = new List<(DateTime time, object r)>();
 
-            // Ordenar por tiempo
-            var orderedRecords = allRecords.OrderBy(r =>
+            // --- CAT048 ---
+            foreach (var r in cat048List.Records)
             {
-                string timeStr = (r is Cat048 c48) ? c48.Time : ((Cat021)r).Time;
-                if (string.IsNullOrEmpty(timeStr)) return DateTime.MaxValue;
+                var t = ParseTimeSafe(r.Time);
+                unified.Add((t, r));
+            }
 
-                int lastColon = timeStr.LastIndexOf(':');
-                if (lastColon >= 0)
-                    timeStr = timeStr.Substring(0, lastColon) + "." + timeStr.Substring(lastColon + 1);
-
-                return DateTime.TryParseExact(timeStr, "HH:mm:ss.fff", CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt)
-                    ? dt
-                    : DateTime.MaxValue;
-            });
-
-            // Escribir CSV
-            foreach (var r in orderedRecords)
+            // --- CAT021 filtrado ---
+            foreach (var r in cat021List.Records)
             {
+                if (r.IsOnGround) continue;
+                if (r.Mode3A == "7777") continue;
+                if (!string.IsNullOrEmpty(r.TI) &&
+                    (char.IsDigit(r.TI[0]) || r.TI.Length == 3))
+                    continue;
+
+                var t = ParseTimeSafe(r.Time);
+                unified.Add((t, r));
+            }
+
+            // 2️⃣ ORDENAR POR TIEMPO REAL
+            var ordered = unified.OrderBy(x => x.time);
+
+            // 3️⃣ ESCRIBIR CSV EN ORDEN REAL
+            foreach (var item in ordered)
+            {
+                var r = item.r;
+
                 if (r is Cat048 c48)
                 {
                     sb.Append("CAT048;");
@@ -71,15 +92,15 @@ namespace AsterixDecoder.Models
                     sb.Append($"{c48.Time ?? "NV"};");
                     sb.Append($"{c48.LAT?.ToString("F6", inv) ?? "NV"};");
                     sb.Append($"{c48.LON?.ToString("F6", inv) ?? "NV"};");
-                    sb.Append("NV;NV;"); // h_wgs84; h_ft
+                    sb.Append("NV;NV;");
                     sb.Append($"{c48.RHO?.ToString("F1", inv) ?? "NV"};");
                     sb.Append($"{c48.THETA?.ToString("F1", inv) ?? "NV"};");
                     sb.Append($"{c48.Mode3A ?? "NV"};");
                     sb.Append($"{c48.FL?.ToString("F1", inv) ?? "NV"};");
-                    sb.Append("NV;"); // ModeC_Corrected
+                    sb.Append("NV;");
                     sb.Append($"{c48.TA ?? "NV"};");
                     sb.Append($"{c48.TI ?? "NV"};");
-                    sb.Append("NV;"); // Mode_S
+                    sb.Append("NV;");
                     sb.Append($"{c48.BP?.ToString("F1", inv) ?? "NV"};");
                     sb.Append($"{c48.RA?.ToString("F1", inv) ?? "NV"};");
                     sb.Append($"{c48.TTA?.ToString("F1", inv) ?? "NV"};");
@@ -91,7 +112,7 @@ namespace AsterixDecoder.Models
                     sb.Append($"{c48.MACH?.ToString("F2", inv) ?? "NV"};");
                     sb.Append($"{c48.BAR?.ToString("F1", inv) ?? "NV"};");
                     sb.Append($"{c48.IVV?.ToString("F1", inv) ?? "NV"};");
-                    sb.Append("NV;NV;NV;"); // Track_number; Ground_Speedkt; Heading
+                    sb.Append("NV;NV;NV;");
                     sb.AppendLine($"{c48.STAT_230?.ToString() ?? "NV"}");
                 }
                 else if (r is Cat021 c21)
@@ -102,16 +123,16 @@ namespace AsterixDecoder.Models
                     sb.Append($"{c21.Time ?? "NV"};");
                     sb.Append($"{c21.LAT.ToString("F6", inv)};");
                     sb.Append($"{c21.LON.ToString("F6", inv)};");
-                    sb.Append("NV;NV;NV;NV;"); // h_wgs84, h_ft, RHO, THETA
+                    sb.Append("NV;NV;NV;NV;");
                     sb.Append($"{c21.Mode3A ?? "NV"};");
                     sb.Append($"{c21.FL.ToString("F1", inv)};");
                     sb.Append($"{c21.ModeC_Corrected.ToString("F1", inv)};");
                     sb.Append($"{c21.TA ?? "NV"};");
                     sb.Append($"{c21.TI ?? "NV"};");
-                    sb.Append("NV;"); // Mode_S
+                    sb.Append("NV;");
                     sb.Append($"{c21.BP?.ToString("F1", inv) ?? "NV"};");
-                    sb.Append("NV;NV;NV;NV;NV;NV;NV;NV;NV;NV;NV;NV;"); // Campos CAT048
-                    sb.AppendLine("NV"); // STAT230 no aplica
+                    sb.Append("NV;NV;NV;NV;NV;NV;NV;NV;NV;NV;NV;NV;");
+                    sb.AppendLine("NV");
                 }
             }
 
@@ -119,5 +140,6 @@ namespace AsterixDecoder.Models
             File.WriteAllText(filename, sb.ToString());
             return filename;
         }
+
     }
 }

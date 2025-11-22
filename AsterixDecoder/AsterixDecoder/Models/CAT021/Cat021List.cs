@@ -220,7 +220,12 @@ namespace AsterixDecoder.Models.CAT021
             {
                 writer.WriteLine("CAT;SAC;SIC;Time;LAT;LON;Mode3A_Code;FL;ModeC_Corrected;TA;TI;BP;OnGround");
 
-                foreach (var r in records.Where(r => !r.IsOnGround && r.TA != "7777"))
+                foreach (var r in records.Where(r =>
+                             !r.IsOnGround &&
+                             r.Mode3A != "7777" &&
+                             (string.IsNullOrEmpty(r.TI) ||
+                              (!char.IsDigit(r.TI[0]) && r.TI.Length != 3))
+                         ))
                 {
                     string latStr = r.LAT.ToString("F6", CultureInfo.InvariantCulture);
                     string lonStr = r.LON.ToString("F6", CultureInfo.InvariantCulture);
