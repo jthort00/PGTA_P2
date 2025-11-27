@@ -126,7 +126,7 @@ namespace AsterixDecoder.Models
                     sb.Append("NV;NV;NV;NV;");
                     sb.Append($"{c21.Mode3A ?? "NV"};");
                     sb.Append($"{c21.FL.ToString("F1", inv)};");
-                    sb.Append($"{c21.ModeC_Corrected.ToString("F1", inv)};");
+                    sb.Append($"{c21.ModeC_Corrected?.ToString("F1", inv) ?? ""};");
                     sb.Append($"{c21.TA ?? "NV"};");
                     sb.Append($"{c21.TI ?? "NV"};");
                     sb.Append("NV;");

@@ -20,7 +20,7 @@ namespace AsterixDecoder.Models.CAT021
         public string TA { get; set; }
         public string TI { get; set; }
         public double? BP { get; set; }
-        public double ModeC_Corrected { get; set; }
+        public double? ModeC_Corrected { get; set; }
         public bool IsOnGround { get; set; }
 
         // Configuración QNH para corrección de altitud

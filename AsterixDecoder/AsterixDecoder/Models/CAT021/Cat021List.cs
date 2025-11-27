@@ -112,9 +112,12 @@ namespace AsterixDecoder.Models.CAT021
         {
             var bpByTI = new Dictionary<string, double>();
 
+            // 1️⃣ Build dictionary (TI → BP) only for FL ≤ 60
             foreach (var r in records)
             {
-                if (!string.IsNullOrEmpty(r.TI) && r.BP.HasValue)
+                if (!string.IsNullOrEmpty(r.TI) &&
+                    r.BP.HasValue &&
+                    r.FL <= 60)
                 {
                     double bps = r.BP.Value;
 
@@ -126,16 +129,33 @@ namespace AsterixDecoder.Models.CAT021
                 }
             }
 
+            // 2️⃣ Infer missing BP
             foreach (var r in records)
             {
-                if (!r.BP.HasValue &&
-                    !string.IsNullOrEmpty(r.TI) &&
-                    bpByTI.TryGetValue(r.TI, out double inferred))
+                // Skip if BP already present
+                if (r.BP.HasValue)
+                    continue;
+
+                if (string.IsNullOrEmpty(r.TI))
+                    continue;
+
+                if (r.FL <= 60)
                 {
-                    r.BP = inferred;
+                    // Try to infer BP from same TI
+                    if (bpByTI.TryGetValue(r.TI, out double inferred))
+                    {
+                        r.BP = inferred;
+                    }
+                    // else leave as null → will use fallback QNH later
+                }
+                else
+                {
+                    // 3️⃣ NEW RULE: Above FL60 → always use standard pressure
+                    r.BP = 1013.25;
                 }
             }
         }
+
         
         /// <summary>
         /// Recalcula ModeC_Corrected después de modificar BP.
@@ -144,32 +164,32 @@ namespace AsterixDecoder.Models.CAT021
         {
             foreach (var r in records)
             {
-                // 1️⃣ Si está en tierra → altitud 0
+                // 🛬 On ground → blank altitude
                 if (r.IsOnGround)
                 {
                     r.FL = 0;
-                    r.ModeC_Corrected = 0;
+                    r.ModeC_Corrected = null;
                     continue;
                 }
 
-                // 2️⃣ Seleccionar el QNH
+                // ✈ Above FL60 → standard pressure + blank corrected altitude
+                if (r.FL > 60)
+                {
+                    r.ModeC_Corrected= null;
+                    continue;
+                }
+
+                // ✈ Below FL60 → compute corrected altitude
                 double qnhToUse = r.BP.HasValue ? r.BP.Value : qnhDefault;
 
-                // 3️⃣ Calcular Mode C corregido
-                if (r.FL < 60.0)
-                {
-                    r.ModeC_Corrected = (100.0 * r.FL) + (qnhToUse - 1013.25) * 30.0;
+                r.ModeC_Corrected = (100.0 * r.FL) + (qnhToUse - 1013.25) * 30.0;
 
-                    // 4️⃣ Evitar negativos residuales por fluctuaciones QNH
-                    if (r.ModeC_Corrected < 0)
-                        r.ModeC_Corrected = 0;
-                }
-                else
-                {
-                    r.ModeC_Corrected = 100.0 * r.FL;
-                }
+                // Avoid tiny negatives caused by QNH fluctuation
+                if (r.ModeC_Corrected < 0)
+                    r.ModeC_Corrected = 0;
             }
         }
+
 
 
 
@@ -229,7 +249,7 @@ namespace AsterixDecoder.Models.CAT021
                 {
                     string latStr = r.LAT.ToString("F6", CultureInfo.InvariantCulture);
                     string lonStr = r.LON.ToString("F6", CultureInfo.InvariantCulture);
-                    string altStr = r.ModeC_Corrected.ToString("F0", CultureInfo.InvariantCulture);
+                    var altStr = r.ModeC_Corrected?.ToString("F0", CultureInfo.InvariantCulture) ?? "";
 
                     string bpStr = "NV";
                     if (r.BP.HasValue && r.BP.Value >= 1000 && r.BP.Value <= 1030)
@@ -269,9 +289,9 @@ namespace AsterixDecoder.Models.CAT021
 
             if (validRecords.Count > 0)
             {
-                double avgAlt = validRecords.Average(r => r.ModeC_Corrected);
-                double maxAlt = validRecords.Max(r => r.ModeC_Corrected);
-                double minAlt = validRecords.Min(r => r.ModeC_Corrected);
+                double? avgAlt = validRecords.Average(r => r.ModeC_Corrected);
+                double? maxAlt = validRecords.Max(r => r.ModeC_Corrected);
+                double? minAlt = validRecords.Min(r => r.ModeC_Corrected);
 
                 Console.WriteLine($"\nAltitudes (válidos):");
                 Console.WriteLine($"  - Promedio: {avgAlt:F0} ft");
