@@ -5,7 +5,7 @@ using System.Linq;
 namespace AsterixDecoder.Models.CAT048
 {
     /// <summary>
-    /// Lista de objetos CAT048 con funcionalidades adicionales
+    /// Lista de objetos CAT048 
     /// </summary>
     public class Cat048List
     {
@@ -221,6 +221,8 @@ namespace AsterixDecoder.Models.CAT048
             records.Clear();
         }
 
+
+
         /// <summary>
         /// Exporta los registros a formato CSV con campos ordenados según especificación
         /// Todos los valores nulos o vacíos se muestran como "N/A"
@@ -254,10 +256,10 @@ namespace AsterixDecoder.Models.CAT048
                     $"{FormatDoubleValue(r.THETA, "F6")}\t" +         // THETA
                     $"{FormatStringValue(r.Mode3A)}\t" +               // Mode_3A
                     $"{FormatDoubleValue(r.FL, "F3")}\t" +            // Flight_level
-                    $"{FormatDoubleValue(r.H, "F3")}\t" +             // ModeC_corrected
+                    $"{((r.FL.HasValue && r.FL.Value < 60.0 && r.H.HasValue) ? r.H.Value.ToString("F3") : "")}\t" +             // ModeC_corrected (solo si corregida)
                     $"{FormatStringValue(r.TA)}\t" +                    // Target_address
                     $"{FormatStringValue(r.TI)}\t" +                    // Target_identification
-                    $"{FormatStringValue(modeS)}\t" +                   // Mode_S (BDS registers)
+                    $"{FormatStringValue(modeS)}\t" +                   // Mode_S 
                     $"{FormatDoubleValue(r.BP, "F3")}\t" +            // BP
                     $"{FormatDoubleValue(r.RA, "F3")}\t" +            // RA
                     $"{FormatDoubleValue(r.TTA, "F3")}\t" +           // TTA
@@ -363,6 +365,18 @@ namespace AsterixDecoder.Models.CAT048
                 return "N/A";
             
             return value;
+        }
+        /// <summary>
+        /// Filtro On Ground (I048/230 STAT): elimina solo estados inequívocamente "on ground".
+        /// Conserva registros con STAT_230 null o distinto de {1,3}.
+        /// </summary>
+        public static List<Cat048> FilterRemoveOnGroundFromI048_230(IEnumerable<Cat048> input)
+        {
+            if (input == null) return new List<Cat048>();
+            int[] removeStates = { 1, 3 }; // Solo "seguro en tierra"
+            return input
+                .Where(r => r != null && !(r.STAT_230.HasValue && removeStates.Contains(r.STAT_230.Value)))
+                .ToList();
         }
     }
 }

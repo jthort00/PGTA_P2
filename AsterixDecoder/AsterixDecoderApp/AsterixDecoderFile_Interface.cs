@@ -28,6 +28,15 @@ namespace AsterixDecoderApp
         public AsterixDecoderFile_Interface()
         {
             InitializeComponent();
+
+            // Adapt form to full screen behavior
+            this.StartPosition = FormStartPosition.CenterScreen;
+            this.FormBorderStyle = FormBorderStyle.Sizable;
+            this.Padding = new Padding(12);
+            this.Resize += (s, e) => {
+                try { drop_panel?.Invalidate(); } catch { }
+            };
+
             InitializeDragDrop();
         }
 
@@ -42,6 +51,10 @@ namespace AsterixDecoderApp
             // Hacer el panel más visible
             drop_panel.BorderStyle = BorderStyle.FixedSingle;
             drop_panel.BackColor = Color.WhiteSmoke;
+
+            // Adaptar el panel a pantalla completa
+            drop_panel.Dock = DockStyle.Fill;
+            drop_panel.Margin = new Padding(0);
         }
 
         private void Drop_panel_Paint(object sender, PaintEventArgs e)
@@ -50,7 +63,7 @@ namespace AsterixDecoderApp
             string message = "Arrastra aquí tu archivo ASTERIX (.ast)\n\n" +
                            "Formatos soportados:\n" +
                            "• CAT021 (ADS-B)\n" +
-                           "• CAT048 (Radar SMR)\n" +
+                           "• CAT048 (Radar)\n" +
                            "• Archivos combinados";
 
             using (Font font = new Font("Segoe UI", 14, FontStyle.Bold))
@@ -78,7 +91,7 @@ namespace AsterixDecoderApp
 
                 // Lista de formatos
                 string format1 = "• CAT021 (ADS-B)";
-                string format2 = "• CAT048 (Radar SMR)";
+                string format2 = "• CAT048 (Radar)";
                 string format3 = "• Archivos combinados";
 
                 SizeF format1Size = e.Graphics.MeasureString(format1, fontSmall);
@@ -128,6 +141,18 @@ namespace AsterixDecoderApp
                         MessageBox.Show(
                             "Por favor, selecciona un archivo con extensión .ast",
                             "Formato de archivo incorrecto",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Warning
+                        );
+                        return;
+                    }
+
+                    // Verificar existencia y accesibilidad
+                    if (!File.Exists(filePath))
+                    {
+                        MessageBox.Show(
+                            "El archivo seleccionado no existe o no es accesible.",
+                            "Archivo no encontrado",
                             MessageBoxButtons.OK,
                             MessageBoxIcon.Warning
                         );
@@ -187,10 +212,13 @@ namespace AsterixDecoderApp
                     // Decodificar usando la nueva lista combinada
                     var combined = AsterixCombinedList.FromFile(filePath);
 
-                    progressForm.Close();
+                    // Ocultar inmediatamente el cuadro de progreso tras decodificar
+                    try { if (!progressForm.IsDisposed) progressForm.Hide(); } catch { }
 
-                    // Mostrar resumen
-                    var (c48, c21) = combined.GetCountsByCategory();
+                    // Mostrar resumen inicial
+                    var counts = combined.GetCountsByCategory();
+                    int c48 = counts.cat048;
+                    int c21 = counts.cat021;
                     string summary = $"Decodificación completada:\n\n" +
                                      (c48 > 0 ? $"CAT048: {c48} registros\n" : string.Empty) +
                                      (c21 > 0 ? $"CAT021: {c21} registros\n" : string.Empty) +
@@ -203,14 +231,127 @@ namespace AsterixDecoderApp
                         MessageBoxIcon.Information
                     );
 
-                    // Abrir la interfaz de tabla con los datos decodificados
-                    OpenTableInterface(combined);
+                    // Aplicar filtro geográfico estricto obligatorio (sin opción de omitir)
+                    var filtered = combined.FilterBarcelonaFIRStrict();
+
+                    var fcounts = filtered.GetCountsByCategory();
+                    int f48 = fcounts.cat048;
+                    int f21 = fcounts.cat021;
+                    MessageBox.Show($"Filtro geográfico (Barcelona FIR) aplicado automáticamente.\nCAT048: {f48}\nCAT021: {f21}\nTotal: {filtered.Count}", "Filtro aplicado", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                    // Abrir la interfaz de tabla con los datos filtrados
+                    OpenTableInterface(filtered);
                 }
-                catch (Exception)
+                catch (InvalidDataException ex)
                 {
-                    progressForm.Close();
-                    throw;
+                    try { if (!progressForm.IsDisposed) progressForm.Hide(); } catch { }
+                    MessageBox.Show(
+                        ex.Message,
+                        "Archivo no válido",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Warning
+                    );
                 }
+                catch (UnauthorizedAccessException ex)
+                {
+                    try { if (!progressForm.IsDisposed) progressForm.Hide(); } catch { }
+                    MessageBox.Show(
+                        $"Acceso denegado al archivo:\n{ex.Message}",
+                        "Permisos insuficientes",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error
+                    );
+                }
+                catch (IOException ex)
+                {
+                    try { if (!progressForm.IsDisposed) progressForm.Hide(); } catch { }
+                    MessageBox.Show(
+                        $"No se pudo leer el archivo:\n{ex.Message}",
+                        "Error de E/S",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error
+                    );
+                }
+                catch (Exception ex)
+                {
+                    try { if (!progressForm.IsDisposed) progressForm.Hide(); } catch { }
+                    MessageBox.Show(
+                        $"Se produjo un error inesperado al decodificar el archivo:\n{ex.Message}",
+                        "Error",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error
+                    );
+                }
+                finally
+                {
+                    try { progressForm.Close(); } catch { }
+                }
+            }
+        }
+
+        private AsterixCombinedList? PromptAndApplyGeographicFilter(AsterixCombinedList combined)
+        {
+            // Ventana de filtro geográfico inicial (aplicado justo tras decodificar)
+            using (var dlg = new Form())
+            {
+                dlg.Text = "Filtro geográfico (aplicar antes de continuar)";
+                dlg.Size = new Size(420, 260);
+                dlg.StartPosition = FormStartPosition.CenterParent;
+                dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
+                dlg.MaximizeBox = false;
+                dlg.MinimizeBox = false;
+
+                // Etiquetas y cajas de texto para 2 vértices
+                var lblInfo = new Label { Text = "Introduce el rectángulo geográfico (dos vértices opuestos)", AutoSize = false, Size = new Size(380, 30), Location = new Point(20, 10) };
+                var lblLat1 = new Label { Text = "Lat 1:", Location = new Point(20, 50), Size = new Size(60, 23) };
+                var txtLat1 = new TextBox { Location = new Point(80, 50), Size = new Size(100, 23) };
+                var lblLon1 = new Label { Text = "Lon 1:", Location = new Point(200, 50), Size = new Size(60, 23) };
+                var txtLon1 = new TextBox { Location = new Point(260, 50), Size = new Size(100, 23) };
+
+                var lblLat2 = new Label { Text = "Lat 2:", Location = new Point(20, 90), Size = new Size(60, 23) };
+                var txtLat2 = new TextBox { Location = new Point(80, 90), Size = new Size(100, 23) };
+                var lblLon2 = new Label { Text = "Lon 2:", Location = new Point(200, 90), Size = new Size(60, 23) };
+                var txtLon2 = new TextBox { Location = new Point(260, 90), Size = new Size(100, 23) };
+
+                // Valores por defecto: caja alrededor del FIR BCN definida previamente en Cat021.IsWithinBarcelonaFIR
+                txtLat1.Text = "40.90"; txtLon1.Text = "1.50";
+                txtLat2.Text = "41.70"; txtLon2.Text = "2.60";
+
+                var btnApply = new Button { Text = "Aplicar filtro", Location = new Point(80, 150), Size = new Size(120, 35) };
+                var btnSkip = new Button { Text = "Omitir", Location = new Point(220, 150), Size = new Size(120, 35) };
+
+                AsterixCombinedList? result = null;
+
+                btnApply.Click += (s, e) =>
+                {
+                    if (!double.TryParse(txtLat1.Text, out double lat1) ||
+                        !double.TryParse(txtLon1.Text, out double lon1) ||
+                        !double.TryParse(txtLat2.Text, out double lat2) ||
+                        !double.TryParse(txtLon2.Text, out double lon2))
+                    {
+                        MessageBox.Show("Introduce coordenadas válidas.", "Formato inválido", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+
+                    result = combined.FilterGeographic(lat1, lon1, lat2, lon2);
+
+                    var (f48, f21) = result.GetCountsByCategory();
+                    MessageBox.Show($"Filtro geográfico aplicado.\nCAT048: {f48}\nCAT021: {f21}\nTotal: {result.Count}", "Filtro aplicado", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    dlg.DialogResult = DialogResult.OK;
+                    dlg.Close();
+                };
+
+                btnSkip.Click += (s, e) =>
+                {
+                    // El usuario decide no filtrar ahora
+                    dlg.DialogResult = DialogResult.Cancel;
+                    dlg.Close();
+                };
+
+                dlg.Controls.AddRange(new Control[] { lblInfo, lblLat1, txtLat1, lblLon1, txtLon1, lblLat2, txtLat2, lblLon2, txtLon2, btnApply, btnSkip });
+
+                dlg.ShowDialog();
+                return result; // null si se omite
             }
         }
 

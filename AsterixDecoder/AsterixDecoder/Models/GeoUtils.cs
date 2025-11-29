@@ -199,7 +199,7 @@ namespace MultiCAT6.Utils
         }
 
         /// <summary>
-        /// converts latitude or longitude expressed as ggºmm'ss,ss'' X to degrees dd,ddddº
+        /// converts latitude or longitude expressed as ggï¿½mm'ss,ss'' X to degrees dd,ddddï¿½
         /// </summary>
         /// <param name="d1">degree</param>
         /// <param name="d2">minutes</param>
@@ -215,7 +215,7 @@ namespace MultiCAT6.Utils
         }
 
         /// <summary>
-        /// converts latitude or longitude expressed as ggºmm'ss,ss'' X to radians dd,ddddr
+        /// converts latitude or longitude expressed as ggï¿½mm'ss,ss'' X to radians dd,ddddr
         /// </summary>
         /// <param name="d1">degree</param>
         /// <param name="d2">minutes</param>
@@ -231,7 +231,7 @@ namespace MultiCAT6.Utils
         }
 
         /// <summary>
-        /// converts latitude or longitude expressed as ggºmm'ss,ss'' X in a string to degrees dd,ddddº
+        /// converts latitude or longitude expressed as ggï¿½mm'ss,ss'' X in a string to degrees dd,ddddï¿½
         /// </summary>
         /// <param name="s1">degree</param>
         /// <param name="s2">minutes</param>
@@ -253,7 +253,7 @@ namespace MultiCAT6.Utils
         }
 
         /// <summary>
-        /// converts degrees dd,ddddd to latitude or longitude expressed as ggºmm'ss,ss'' X 
+        /// converts degrees dd,ddddd to latitude or longitude expressed as ggï¿½mm'ss,ss'' X 
         /// </summary>
         /// <param name="d">full degrees</param>
         /// <param name="d1">degree</param>
@@ -270,7 +270,7 @@ namespace MultiCAT6.Utils
         }
 
         /// <summary>
-        /// converts radians dd,ddddd to latitude or longitude expressed as ggºmm'ss,ss'' X 
+        /// converts radians dd,ddddd to latitude or longitude expressed as ggï¿½mm'ss,ss'' X 
         /// </summary>
         /// <param name="d">full radians</param>
         /// <param name="d1">degree</param>
@@ -507,7 +507,7 @@ namespace MultiCAT6.Utils
         public CoordinatesUVH change_system_cartesian2stereographic(CoordinatesXYZ c)
         {
             if (c == null) return (CoordinatesUVH)null;
-            // don't know why we have to do this ¿?
+            // don't know why we have to do this ï¿½?
             // double z = this.change_system_xyh2system_z(c);
 
             CoordinatesUVH res = new CoordinatesUVH();
@@ -997,7 +997,7 @@ namespace MultiCAT6.Utils
         public static string ToStringStandard(CoordinatesPolar c)
         {
             System.Text.StringBuilder s = new System.Text.StringBuilder();
-            s.AppendFormat(" R: {0:f4}NM T: {1:f4}º E: {2:f4}º", c.Rho * GeoUtils.METERS2NM, c.Theta * GeoUtils.RADS2DEGS, c.Elevation * GeoUtils.RADS2DEGS);
+            s.AppendFormat(" R: {0:f4}NM T: {1:f4}ï¿½ E: {2:f4}ï¿½", c.Rho * GeoUtils.METERS2NM, c.Theta * GeoUtils.RADS2DEGS, c.Elevation * GeoUtils.RADS2DEGS);
             return s.ToString();
         }
     }
@@ -1152,10 +1152,10 @@ namespace MultiCAT6.Utils
             System.Text.StringBuilder s = new System.Text.StringBuilder();
             double d1, d2, d3; int n;
             GeoUtils.Radians2LatLon(lat, out d1, out d2, out d3, out n);
-            //s.AppendFormat("{0:d2}º{1:d2}'{2:f4}" + (n == 0 ? 'N' : 'S') + " ", (int)d1, (int)d2, d3);
+            //s.AppendFormat("{0:d2}ï¿½{1:d2}'{2:f4}" + (n == 0 ? 'N' : 'S') + " ", (int)d1, (int)d2, d3);
             s.AppendFormat("{0:d2}:{1:d2}:{2:f4}" + (n == 0 ? 'N' : 'S') + " ", (int)d1, (int)d2, d3);
             GeoUtils.Radians2LatLon(lon, out d1, out d2, out d3, out n);
-            //s.AppendFormat("{0:d2}º{1:d2}'{2:f4}" + (n == 0 ? 'E' : 'W') + " ", (int)d1, (int)d2, d3);
+            //s.AppendFormat("{0:d2}ï¿½{1:d2}'{2:f4}" + (n == 0 ? 'E' : 'W') + " ", (int)d1, (int)d2, d3);
             s.AppendFormat("{0:d3}:{1:d2}:{2:f4}" + (n == 0 ? 'E' : 'W') + " ", (int)d1, (int)d2, d3);
             s.AppendFormat("{0:f4}m", height);
             s.Append(Environment.NewLine);

@@ -30,22 +30,22 @@ namespace AsterixDecoder.Models
 
             while (currentByte < data.Length)
             {
-	            // Ensure enough bytes for category and length
+	            // Asegurar suficientes bytes para la categoría y la longitud
 	            if (currentByte + 3 >= data.Length) break;
 
-	            // Category (should be 21)
+	            // Categoría (debería ser 21)
 	            byte cat = data[currentByte++];
 	            if (cat != 21)
 		            continue;
 
-	            // Record length (2 bytes)
+	            // Longitud del registro (2 bytes)
 	            int length = (data[currentByte] << 8) | data[currentByte + 1];
 	            currentByte += 2;
 
 	            int recordEnd = currentByte + length - 3;
 	            if (recordEnd > data.Length) break;
 
-	            // Decode FSPEC + record
+	            // Decodificar FSPEC + registro
 	            var fspec  = ReadFSPEC();
 	            var record = new RawCat021Data();
 	            DecodeRecord(record, fspec, recordEnd);

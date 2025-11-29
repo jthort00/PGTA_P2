@@ -9,7 +9,7 @@ using System.Text;
 namespace AsterixDecoder.Models.CAT021
 {
     /// <summary>
-    /// Lista de objetos CAT021 con funcionalidades adicionales
+    /// Lista de objetos CAT021
     /// </summary>
     public class Cat021List
     {
@@ -150,7 +150,7 @@ namespace AsterixDecoder.Models.CAT021
                 }
                 else
                 {
-                    // 3️⃣ NEW RULE: Above FL60 → always use standard pressure
+                    // 3️⃣ NUEVA REGLA: Por encima de FL60 → usar siempre presión estándar
                     r.BP = 1013.25;
                 }
             }
@@ -172,26 +172,23 @@ namespace AsterixDecoder.Models.CAT021
                     continue;
                 }
 
-                // ✈ Above FL60 → standard pressure + blank corrected altitude
+                // ✈ Por encima de FL60 → presión estándar + altitud corregida en blanco
                 if (r.FL > 60)
                 {
                     r.ModeC_Corrected= null;
                     continue;
                 }
 
-                // ✈ Below FL60 → compute corrected altitude
+                // ✈ Por debajo de FL60 → calcular altitud corregida
                 double qnhToUse = r.BP.HasValue ? r.BP.Value : qnhDefault;
 
                 r.ModeC_Corrected = (100.0 * r.FL) + (qnhToUse - 1013.25) * 30.0;
 
-                // Avoid tiny negatives caused by QNH fluctuation
+                // Evitar negativos pequeños causados por fluctuación de QNH
                 if (r.ModeC_Corrected < 0)
                     r.ModeC_Corrected = 0;
             }
         }
-
-
-
 
         /// <summary>
         /// Imprime todos los registros en formato de lista
@@ -238,7 +235,7 @@ namespace AsterixDecoder.Models.CAT021
 
             using (var writer = new StreamWriter(filePath, false, Encoding.UTF8))
             {
-                writer.WriteLine("CAT;SAC;SIC;Time;LAT;LON;Mode3A_Code;FL;ModeC_Corrected;TA;TI;BP;OnGround");
+                writer.WriteLine("CAT\tSAC\tSIC\tTime\tLAT\tLON\tMode3A_Code\tFL\tModeC_Corrected\tTA\tTI\tBP\tOnGround");
 
                 foreach (var r in records.Where(r =>
                              !r.IsOnGround &&
@@ -247,17 +244,18 @@ namespace AsterixDecoder.Models.CAT021
                               (!char.IsDigit(r.TI[0]) && r.TI.Length != 3))
                          ))
                 {
-                    string latStr = r.LAT.ToString("F6", CultureInfo.InvariantCulture);
-                    string lonStr = r.LON.ToString("F6", CultureInfo.InvariantCulture);
-                    var altStr = r.ModeC_Corrected?.ToString("F0", CultureInfo.InvariantCulture) ?? "";
+                    string latStr = FormatDoubleValue(r.LAT, "F8");
+                    string lonStr = FormatDoubleValue(r.LON, "F8");
+                    string altStr = r.ModeC_Corrected.HasValue ? r.ModeC_Corrected.Value.ToString("F4", CultureInfo.InvariantCulture) : "N/A";
 
-                    string bpStr = "NV";
+                    string bpStr = "N/A";
                     if (r.BP.HasValue && r.BP.Value >= 1000 && r.BP.Value <= 1030)
                         bpStr = r.BP.Value.ToString("F2", CultureInfo.InvariantCulture);
 
                     writer.WriteLine(
-                        $"{r.CAT};{r.SAC};{r.SIC};{r.Time};{latStr};{lonStr};" +
-                        $"{r.Mode3A};{r.FL};{altStr};{r.TA};{r.TI};{bpStr};{r.IsOnGround}"
+                        $"{FormatStringValue(r.CAT)}\t{FormatIntValue(r.SAC)}\t{FormatIntValue(r.SIC)}\t{FormatStringValue(r.Time)}\t" +
+                        $"{latStr}\t{lonStr}\t{FormatStringValue(r.Mode3A)}\t{FormatDoubleValue(r.FL, "F2")}\t{altStr}\t" +
+                        $"{FormatStringValue(r.TA)}\t{FormatStringValue(r.TI)}\t{bpStr}\t{r.IsOnGround}"
                     );
                 }
             }
@@ -294,10 +292,26 @@ namespace AsterixDecoder.Models.CAT021
                 double? minAlt = validRecords.Min(r => r.ModeC_Corrected);
 
                 Console.WriteLine($"\nAltitudes (válidos):");
-                Console.WriteLine($"  - Promedio: {avgAlt:F0} ft");
-                Console.WriteLine($"  - Máxima: {maxAlt:F0} ft");
-                Console.WriteLine($"  - Mínima: {minAlt:F0} ft");
+                Console.WriteLine($"  - Promedio: {(avgAlt.HasValue ? avgAlt.Value.ToString("F4", CultureInfo.InvariantCulture) : "N/A")} ft");
+                Console.WriteLine($"  - Máxima: {(maxAlt.HasValue ? maxAlt.Value.ToString("F4", CultureInfo.InvariantCulture) : "N/A")} ft");
+                Console.WriteLine($"  - Mínima: {(minAlt.HasValue ? minAlt.Value.ToString("F4", CultureInfo.InvariantCulture) : "N/A")} ft");
             }
+        }
+
+        // Helper formatting methods for CSV/output consistency (aligned with CAT048)
+        private string FormatDoubleValue(double? value, string format = "F6")
+        {
+            return value.HasValue ? value.Value.ToString(format, CultureInfo.InvariantCulture) : "N/A";
+        }
+
+        private string FormatIntValue(int? value)
+        {
+            return value.HasValue ? value.Value.ToString(CultureInfo.InvariantCulture) : "N/A";
+        }
+
+        private string FormatStringValue(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) || value == "N/A" ? "N/A" : value;
         }
     }
 }

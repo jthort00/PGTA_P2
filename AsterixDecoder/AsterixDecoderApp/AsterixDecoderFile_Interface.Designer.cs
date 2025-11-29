@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(AsterixDecoderFile_Interface));
             drop_panel = new Panel();
             SuspendLayout();
             // 
@@ -43,10 +44,16 @@
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
+            AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            BackColor = SystemColors.Control;
             ClientSize = new Size(800, 450);
             Controls.Add(drop_panel);
+            FormBorderStyle = FormBorderStyle.FixedSingle;
+            Icon = (Icon)resources.GetObject("$this.Icon");
             Name = "AsterixDecoderFile_Interface";
-            Text = "AsterixDecoderFile_Interface";
+            StartPosition = FormStartPosition.CenterScreen;
+            Text = "Asterix Decoder File";
+            TransparencyKey = Color.Black;
             Load += AsterixDecoderFile_Interface_Load;
             ResumeLayout(false);
         }

@@ -39,7 +39,7 @@ namespace AsterixDecoder.Models.CAT021
             if (rawData.Time_Reception_Position.HasValue)
             {
                 var time = rawData.Time_Reception_Position.Value;
-                Time = $"{time.Hours:D2}:{time.Minutes:D2}:{time.Seconds:D2}.{time.Milliseconds:D3}";
+                Time = $"{time.Hours:D2}:{time.Minutes:D2}:{time.Seconds:D2}:{time.Milliseconds:D3}";
             }
             else
             {
@@ -74,10 +74,10 @@ namespace AsterixDecoder.Models.CAT021
         /// <summary>
         /// Procesa el Flight Level y calcula la altitud real con corrección QNH
         /// </summary>
-        // Add this at class scope (in your decoder/processor class)
-        public double? lastKnownBP; // remember last non-standard BP until 6000 ft
+        // Añadir esto a nivel de clase (en tu decodificador/procesador)
+        public double? lastKnownBP; // recordar el último BP no estándar hasta 6000 ft
 
-        // Updated ProcessFlightLevel implementation
+        // Implementación actualizada de ProcessFlightLevel
         
 
         public void ProcessFlightLevel(RawCat021Data rawData, double actualQNH)
@@ -87,13 +87,13 @@ namespace AsterixDecoder.Models.CAT021
                 FL = 0;
                 ModeC_Corrected = 0;
                 if (!lastKnownBP.HasValue)
-                    BP = actualQNH; // fallback
+                    BP = actualQNH; // valor por defecto (alternativo)
                 else
-                    BP = lastKnownBP; // keep previous
+                    BP = lastKnownBP; // mantener el anterior
                 return;
             }
 
-            // Convert raw counts to Mode-C altitude
+            // Convertir cuentas crudas a altitud Mode-C
             double modeC_alt_ft = rawData.FlightLevel_Raw * 0.25;
             
             if (rawData.GBS || rawData.ATP == 2)
@@ -107,7 +107,7 @@ namespace AsterixDecoder.Models.CAT021
 
             FL = modeC_alt_ft;
             
-            // Process Barometric Pressure Setting (BP)
+            // Procesar el ajuste de presión barométrica (BP)
             if (rawData.BarometricPressureSetting.HasValue &&
                 rawData.BarometricPressureSetting.Value >= 1000.0 &&
                 rawData.BarometricPressureSetting.Value <= 1030.0)
@@ -128,12 +128,12 @@ namespace AsterixDecoder.Models.CAT021
 
             if (FL < 60.0)
             {
-                // Below TA -> apply QNH correction
+                // Por debajo de la TA -> aplicar corrección QNH
                 ModeC_Corrected = (100.0 * FL) + (qnhToUse - 1013.25) * 30.0;
             }
             else
             {
-                // Above TA -> standard pressure
+                // Por encima de la TA -> presión estándar
                 ModeC_Corrected = 100.0 * FL;
             }
         }
@@ -143,20 +143,20 @@ namespace AsterixDecoder.Models.CAT021
         /// </summary>
         private bool DetermineGroundStatus(RawCat021Data rawData)
         {
-            // 1. Trust Ground Bit if present
+            // 1. Confiar en el Ground Bit si está presente
             if (rawData.GBS)
                 return true;
 
-            // 2. ATP = 2 means surface vehicle
+            // 2. ATP = 2 significa vehículo en superficie
             if (rawData.ATP == 2)
                 return true;
 
-            // 3. Flight Level clearly indicates ground
+            // 3. El Flight Level indica claramente que está en tierra
             double fl = rawData.FlightLevel_Raw * 0.25;
             if (rawData.FlightLevel_Raw == 0 || fl <= 14.0)
                 return true;
 
-            // 4. Otherwise, assume airborne
+            // 4. En otro caso, asumir en vuelo (airborne)
             return false;
         }
 

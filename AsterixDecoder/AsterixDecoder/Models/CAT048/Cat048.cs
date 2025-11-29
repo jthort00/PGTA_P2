@@ -7,7 +7,7 @@ namespace AsterixDecoder.Models.CAT048
 {
     public class Cat048
     {
-        // Atributos principales - TODOS NULLABLE
+        // Atributos principales 
         public string CAT { get; set; }
         public int? SAC { get; set; }
         public int? SIC { get; set; }
@@ -55,8 +55,13 @@ namespace AsterixDecoder.Models.CAT048
         private const double QNH_STANDARD = 1013.25; // hPa
         private const double TRANSITION_ALTITUDE = 6000.0; // feet
 
-        public Cat048(RawCat048Data rawData, GeoUtils geoUtils, CoordinatesWGS84 radarPosition)
+        // Estado de QNH/BP para corrección bajo TA
+        private double? lastKnownBP; // último QNH válido (1000–1030 hPa) visto por debajo de TA
+        private readonly double actualQNH; // QNH de entorno (fallback)
+
+        public Cat048(RawCat048Data rawData, GeoUtils geoUtils, CoordinatesWGS84 radarPosition, double actualQNH = QNH_STANDARD)
         {
+            this.actualQNH = actualQNH;
             // Inicializar campos básicos
             CAT = "CAT048";
             SAC = rawData.SAC > 0 ? rawData.SAC : (int?)null;
@@ -99,12 +104,6 @@ namespace AsterixDecoder.Models.CAT048
             // Procesar Mode S Data
             ProcessModeSData(rawData);
 
-            // Calcular Ground Speed y Heading desde I048/200 (Calculated Track Velocity)
-            // NOTA: rawData.VxRaw y VyRaw NO son velocidades cartesianas
-            // Según ASTERIX CAT048, I048/200 contiene:
-            // - bits 32-17: Calculated Groundspeed (LSB = 2^-14 NM/s ≈ 0.22 kt)
-            // - bits 16-1: Calculated Heading (LSB = 360/2^16 ≈ 0.0055°)
-
             if (rawData.VxRaw != 0 || rawData.VyRaw != 0)
             {                
                 GSSD = rawData.VxRaw != 0 ? rawData.VxRaw : (double?)null;
@@ -114,7 +113,6 @@ namespace AsterixDecoder.Models.CAT048
             // Status
             Stat = string.IsNullOrWhiteSpace(rawData.TargetReportDescriptor) ? null : rawData.TargetReportDescriptor;
 
-            // NUEVO: exponer el valor numérico de I048/020.typ
             TypDesc = rawData.TargetType;
 
             // RAB (I048/020) - indicador de transponder fijo
@@ -168,40 +166,64 @@ namespace AsterixDecoder.Models.CAT048
         }
 
         private void ProcessFlightLevel(RawCat048Data rawData)
-        {       
-            // Si FL raw es 0, no establecer FL (dejar como null)
-            if (rawData.FlightLevel == 0)
+        {
+            // Si el campo I048/090 no está presente en el mensaje, dejar FL/H como null
+            if (!rawData.HasFlightLevel)
             {
                 FL = null;
+                H = null;
+                H_m = null;
+                // Mantener último BP válido si existiera; si no, usar QNH actual como referencia
+                if (!lastKnownBP.HasValue)
+                    BP = actualQNH;
+                else
+                    BP = lastKnownBP;
                 return;
             }
 
+            // FL en centenas de pies (raw en cuartos de FL). FL puede ser 0 y es válido (nivel de vuelo 0)
             FL = rawData.FlightLevel / 4.0;
-            double altitudeFeet = FL.HasValue ? FL.Value * 100 : 0;
+            double fl = FL ?? 0.0;
+            double altitudeFeet = fl * 100.0;
 
-            // Obtener QNH correcto
-            double? qnhCurrent = null;
+            // Obtener QNH desde BDS 4.0 si está en rango válido (1000–1030 hPa)
             var bds40 = rawData.ModeSDataBlocks?.FirstOrDefault(b => b.BDSRegister == 0x40);
             if (bds40 != null)
             {
-                if (bds40.BarometricPressureSetting >= 800 && bds40.BarometricPressureSetting <= 1200)
+                if (bds40.BarometricPressureSetting >= 1000.0 && bds40.BarometricPressureSetting <= 1030.0)
                 {
-                    qnhCurrent = bds40.BarometricPressureSetting;
-                    BP = qnhCurrent;
+                    BP = bds40.BarometricPressureSetting;
+                    lastKnownBP = BP; // recordar el último BP válido
+                }
+                else
+                {
+                    BP = null; // presente pero fuera de rango
                 }
             }
+            else
+            {
+                BP = null; // no vino en este mensaje
+            }
 
-            // Aplicar corrección QNH correctamente
-            if (Math.Abs(altitudeFeet) < TRANSITION_ALTITUDE && qnhCurrent.HasValue)
+            // Seleccionar QNH a usar: BP -> lastKnownBP -> actualQNH
+            double qnhToUse = actualQNH;
+            if (BP.HasValue)
+                qnhToUse = BP.Value;
+            else if (lastKnownBP.HasValue)
+                qnhToUse = lastKnownBP.Value;
+
+            // Calcular altitud corregida solo por debajo de 6000 ft (FL < 60)
+            if (fl < 60.0)
             {
-                H = altitudeFeet + (qnhCurrent.Value - QNH_STANDARD) * 30.0;
-                H_m = H * GeoUtils.FEET2METERS;
+                H = altitudeFeet + (qnhToUse - QNH_STANDARD) * 30.0;
+                if (H < 0) H = 0; // evitar negativos por diferencias de QNH
             }
-            else if (altitudeFeet != 0)
+            else
             {
-                H = altitudeFeet;
-                H_m = H * GeoUtils.FEET2METERS;
+                H = altitudeFeet; // por encima de TA usar presión estándar
             }
+
+            H_m = H.HasValue ? H.Value * GeoUtils.FEET2METERS : (double?)null;
         }
 
         private void ProcessCommunicationsCapability(RawCat048Data rawData)

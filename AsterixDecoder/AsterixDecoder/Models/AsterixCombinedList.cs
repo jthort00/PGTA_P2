@@ -5,13 +5,45 @@ using System.IO;
 using System.Linq;
 using AsterixDecoder.Models.CAT048;
 using AsterixDecoder.Models.CAT021;
+using AsterixDecoder.IO;
+using MultiCAT6.Utils;
 
 namespace AsterixDecoder.Models
 {
     public class AsterixCombinedList
     {
-        private Cat048List cat048List;
-        private Cat021List cat021List;
+        // Categorías disponibles
+        public enum AsterixCategory { CAT048, CAT021 }
+
+        // Registro unificado para UI/Export
+        public class AsterixRecord
+        {
+            public AsterixCategory Category { get; }
+            public Cat048? Cat048 { get; }
+            public Cat021? Cat021 { get; }
+
+            private AsterixRecord(AsterixCategory category, Cat048? cat048, Cat021? cat021)
+            {
+                Category = category;
+                Cat048 = cat048;
+                Cat021 = cat021;
+            }
+
+            public static AsterixRecord From(Cat048 value) => new AsterixRecord(AsterixCategory.CAT048, value, null);
+            public static AsterixRecord From(Cat021 value) => new AsterixRecord(AsterixCategory.CAT021, null, value);
+        }
+
+        private readonly List<AsterixRecord> _records = new List<AsterixRecord>();
+
+        // Acceso directo a listas por categoría cuando haga falta
+        private readonly Cat048List cat048List;
+        private readonly Cat021List cat021List;
+
+        public AsterixCombinedList()
+        {
+            cat048List = new Cat048List();
+            cat021List = new Cat021List();
+        }
 
         public AsterixCombinedList(Cat048List cat048, Cat021List cat021)
         {
@@ -21,10 +53,106 @@ namespace AsterixDecoder.Models
             // Aplicar inferencia de BP y recalcular altitudes en CAT021
             cat021List.InferMissingBP();
             cat021List.RecomputeCorrectedAltitudes();
+
+            // Poblar registros combinados en orden de llegada (concatenado)
+            foreach (var r in cat048List.Records) _records.Add(AsterixRecord.From(r));
+            foreach (var r in cat021List.Records) _records.Add(AsterixRecord.From(r));
         }
 
-        public int Count => cat048List.Count + cat021List.Count;
-        
+        // Número total de registros combinados
+        public int Count => _records.Count;
+
+        // API esperada por las UIs
+        public void Add(Cat048 cat048)
+        {
+            if (cat048 == null) return;
+            cat048List.Add(cat048);
+            _records.Add(AsterixRecord.From(cat048));
+        }
+
+        public void Add(Cat021 cat021)
+        {
+            if (cat021 == null) return;
+            cat021List.Add(cat021);
+            _records.Add(AsterixRecord.From(cat021));
+        }
+
+        public void Add(AsterixRecord record)
+        {
+            if (record == null) return;
+            _records.Add(record);
+            if (record.Category == AsterixCategory.CAT048 && record.Cat048 != null)
+                cat048List.Add(record.Cat048);
+            else if (record.Category == AsterixCategory.CAT021 && record.Cat021 != null)
+                cat021List.Add(record.Cat021);
+        }
+
+        public void AddRange(IEnumerable<AsterixRecord> records)
+        {
+            if (records == null) return;
+            foreach (var r in records) Add(r);
+        }
+
+        public IReadOnlyList<AsterixRecord> GetAll() => _records;
+
+        public List<Cat048> GetCat048() => _records.Where(r => r.Category == AsterixCategory.CAT048 && r.Cat048 != null)
+                                                   .Select(r => r.Cat048)
+                                                   .Where(x => x != null)!
+                                                   .ToList()!;
+
+        public List<Cat021> GetCat021() => _records.Where(r => r.Category == AsterixCategory.CAT021 && r.Cat021 != null)
+                                                   .Select(r => r.Cat021)
+                                                   .Where(x => x != null)!
+                                                   .ToList()!;
+
+        public (int cat048, int cat021) GetCountsByCategory()
+        {
+            int c48 = _records.Count(r => r.Category == AsterixCategory.CAT048);
+            int c21 = _records.Count(r => r.Category == AsterixCategory.CAT021);
+            return (c48, c21);
+        }
+
+        // Filtros geográficos combinados sencillos
+        public AsterixCombinedList FilterGeographic(double lat1, double lon1, double lat2, double lon2)
+        {
+            double minLat = Math.Min(lat1, lat2);
+            double maxLat = Math.Max(lat1, lat2);
+            double minLon = Math.Min(lon1, lon2);
+            double maxLon = Math.Max(lon1, lon2);
+
+            var result = new AsterixCombinedList();
+            foreach (var r in _records)
+            {
+                if (r.Category == AsterixCategory.CAT048 && r.Cat048 != null)
+                {
+                    var c = r.Cat048;
+                    if (c.LAT.HasValue && c.LON.HasValue &&
+                        c.LAT.Value >= minLat && c.LON.Value >= minLon &&
+                        c.LAT.Value <= maxLat && c.LON.Value <= maxLon)
+                    {
+                        result.Add(c);
+                    }
+                }
+                else if (r.Category == AsterixCategory.CAT021 && r.Cat021 != null)
+                {
+                    var c = r.Cat021;
+                    if (c.LAT >= minLat && c.LON >= minLon && c.LAT <= maxLat && c.LON <= maxLon)
+                    {
+                        result.Add(c);
+                    }
+                }
+            }
+            return result;
+        }
+
+        // Filtro FIR Barcelona (coincidente con Cat021.IsWithinBarcelonaFIR)
+        public AsterixCombinedList FilterBarcelonaFIRStrict()
+        {
+            // Caja aproximada del FIR BCN
+            const double minLat = 40.9, maxLat = 41.7, minLon = 1.5, maxLon = 2.6;
+            return FilterGeographic(minLat, minLon, maxLat, maxLon);
+        }
+
         private DateTime ParseTimeSafe(string t)
         {
             if (string.IsNullOrEmpty(t))
@@ -44,8 +172,9 @@ namespace AsterixDecoder.Models
                 : DateTime.MaxValue;
         }
 
+        public string ExportCombinedToCSV() => ExportCombinedToCSV(null);
 
-        public string ExportCombinedToCSV()
+        public string ExportCombinedToCSV(string? outputPath)
         {
             var sb = new System.Text.StringBuilder();
             var inv = CultureInfo.InvariantCulture;
@@ -53,39 +182,17 @@ namespace AsterixDecoder.Models
             // Cabecera CSV
             sb.AppendLine("CAT;SAC;SIC;Time;Latitude;Longitude;h_wgs84;h_ft;RHO;THETA;Mode3A;Flight_Level;ModeC_Corrected;TA;TI;Mode_S;BP;RA;TTA;GS;TAR;TAS;HDG;IAS;MACH;BAR;IVV;Track_number;Ground_Speedkt;Heading;STAT230");
 
-            // 1️⃣ CREAR LISTA UNIFICADA PARA ORDENAR
-            var unified = new List<(DateTime time, object r)>();
+            // Ordenar por tiempo real calculado (si no hay tiempo, al final)
+            var ordered = _records
+                .Select(r => (time: r.Category == AsterixCategory.CAT048 ? ParseTimeSafe(r.Cat048?.Time) : ParseTimeSafe(r.Cat021?.Time), r))
+                .OrderBy(x => x.time)
+                .Select(x => x.r);
 
-            // --- CAT048 ---
-            foreach (var r in cat048List.Records)
+            foreach (var r in ordered)
             {
-                var t = ParseTimeSafe(r.Time);
-                unified.Add((t, r));
-            }
-
-            // --- CAT021 filtrado ---
-            foreach (var r in cat021List.Records)
-            {
-                if (r.IsOnGround) continue;
-                if (r.Mode3A == "7777") continue;
-                if (!string.IsNullOrEmpty(r.TI) &&
-                    (char.IsDigit(r.TI[0]) || r.TI.Length == 3))
-                    continue;
-
-                var t = ParseTimeSafe(r.Time);
-                unified.Add((t, r));
-            }
-
-            // 2️⃣ ORDENAR POR TIEMPO REAL
-            var ordered = unified.OrderBy(x => x.time);
-
-            // 3️⃣ ESCRIBIR CSV EN ORDEN REAL
-            foreach (var item in ordered)
-            {
-                var r = item.r;
-
-                if (r is Cat048 c48)
+                if (r.Category == AsterixCategory.CAT048 && r.Cat048 != null)
                 {
+                    var c48 = r.Cat048;
                     sb.Append("CAT048;");
                     sb.Append($"{c48.SAC?.ToString(inv) ?? "NV"};");
                     sb.Append($"{c48.SIC?.ToString(inv) ?? "NV"};");
@@ -97,7 +204,7 @@ namespace AsterixDecoder.Models
                     sb.Append($"{c48.THETA?.ToString("F1", inv) ?? "NV"};");
                     sb.Append($"{c48.Mode3A ?? "NV"};");
                     sb.Append($"{c48.FL?.ToString("F1", inv) ?? "NV"};");
-                    sb.Append("NV;");
+                    sb.Append($"{(c48.FL.HasValue && c48.FL.Value < 60.0 && c48.H.HasValue ? c48.H.Value.ToString("F1", inv) : "")};");
                     sb.Append($"{c48.TA ?? "NV"};");
                     sb.Append($"{c48.TI ?? "NV"};");
                     sb.Append("NV;");
@@ -115,8 +222,9 @@ namespace AsterixDecoder.Models
                     sb.Append("NV;NV;NV;");
                     sb.AppendLine($"{c48.STAT_230?.ToString() ?? "NV"}");
                 }
-                else if (r is Cat021 c21)
+                else if (r.Category == AsterixCategory.CAT021 && r.Cat021 != null)
                 {
+                    var c21 = r.Cat021;
                     sb.Append("CAT021;");
                     sb.Append($"{c21.SAC};");
                     sb.Append($"{c21.SIC};");
@@ -126,7 +234,7 @@ namespace AsterixDecoder.Models
                     sb.Append("NV;NV;NV;NV;");
                     sb.Append($"{c21.Mode3A ?? "NV"};");
                     sb.Append($"{c21.FL.ToString("F1", inv)};");
-                    sb.Append($"{c21.ModeC_Corrected?.ToString("F1", inv) ?? ""};");
+                    sb.Append($"{(c21.FL < 60 && c21.ModeC_Corrected.HasValue ? c21.ModeC_Corrected.Value.ToString("F1", inv) : "")};");
                     sb.Append($"{c21.TA ?? "NV"};");
                     sb.Append($"{c21.TI ?? "NV"};");
                     sb.Append("NV;");
@@ -136,10 +244,70 @@ namespace AsterixDecoder.Models
                 }
             }
 
-            string filename = $"combined_export_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+            string filename = !string.IsNullOrWhiteSpace(outputPath)
+                ? outputPath
+                : $"combined_export_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
             File.WriteAllText(filename, sb.ToString());
             return filename;
         }
 
+        // Carga rápida desde archivo .ast (muy básica, para la UI de arrastrar/soltar)
+        public static AsterixCombinedList FromFile(string filePath)
+        {
+            if (string.IsNullOrWhiteSpace(filePath))
+                throw new ArgumentException("Ruta de archivo vacía", nameof(filePath));
+            if (!File.Exists(filePath))
+                throw new FileNotFoundException("Archivo no encontrado", filePath);
+
+            var reader = new BinaryFileReader(filePath);
+            var messages = reader.ReadMessages();
+
+            var c48List = new Cat048List();
+            var c21List = new Cat021List();
+
+            // Utilidades necesarias para CAT048
+            var geoUtils = new GeoUtils();
+            // Radar BCN (igual que en interfaz de archivo)
+            var radarPos = new CoordinatesWGS84(
+                GeoUtils.LatLon2Radians(41, 18, 2.5284, 0),
+                GeoUtils.LatLon2Radians(2, 6, 7.4095, 0),
+                27.257
+            );
+
+            foreach (var msg in messages)
+            {
+                if (msg.Length < 3) continue;
+                byte cat = msg[0];
+                try
+                {
+                    if (cat == 48)
+                    {
+                        var dec = new Cat048Decoder(msg);
+                        var raws = dec.Decode();
+                        foreach (var raw in raws)
+                        {
+                            var item = new Cat048(raw, geoUtils, radarPos);
+                            c48List.Add(item);
+                        }
+                    }
+                    else if (cat == 21)
+                    {
+                        var dec = new Cat021Decoder(msg);
+                        var raws = dec.Decode();
+                        foreach (var raw in raws)
+                        {
+                            var item = new Cat021(raw);
+                            c21List.Add(item);
+                        }
+                    }
+                }
+                catch
+                {
+                    // Ignorar registros corruptos individuales para robustez
+                }
+            }
+
+            return new AsterixCombinedList(c48List, c21List);
+        }
     }
 }

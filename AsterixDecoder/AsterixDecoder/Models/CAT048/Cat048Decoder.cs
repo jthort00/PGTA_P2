@@ -6,7 +6,7 @@ using System.Text;
 namespace AsterixDecoder.Models.CAT048
 {
     /// <summary>
-    /// Decodificador ASTERIX CAT048 - CORREGIDO
+    /// Decodificador ASTERIX CAT048
     /// </summary>
     public class Cat048Decoder
     {
@@ -62,21 +62,7 @@ namespace AsterixDecoder.Models.CAT048
                 }
                 hasExtension = (octet & 1) != 0;
             }
-            //// Mostrar información detallada del FSPEC
-            //Console.WriteLine("=== FSPEC Decodificado ===");
-            //Console.WriteLine($"Total bits: {fspec.Count}");
-            //var binaryString = string.Join("", fspec.Select(b => b ? "1" : "0"));
-            //Console.WriteLine($"Binario: {binaryString}");
-            //Console.WriteLine("Bits presentes:");
-            //for (int i = 0; i < fspec.Count; i++)
-            //{
-            //    if (fspec[i])
-            //    {
-            //        Console.WriteLine($"  FRN {i + 1} presente");
-            //        Console.WriteLine($"valor FSPEC {fspec[11]}");
-            //    }
-            //}
-            //Console.WriteLine("=====================");
+            
             return fspec;
             
         }
@@ -126,17 +112,11 @@ namespace AsterixDecoder.Models.CAT048
                     _ => "Unknown"
                 };
 
-                string alertStatus = spi ? "SPI" : "No alert";
-                string radarStatus = rdp ? "RDP" : "no SPI";
-                string groundStatus = typ == 5 || typ == 7 ? "aircraft on ground" : "aircraft airborne";
-
-                trd.Append($"{alertStatus}, {radarStatus}, {groundStatus}");
-
                 record.TypDesc = typ;
                 record.TargetType = typ;
                 record.SPIPresent = spi;
                 record.RABPresent = rab;
-                record.TargetReportDescriptor = trd.ToString();
+                
 
                 if ((octet1 & 0x01) != 0 && CheckBytes(1, recordEnd))
                 {
@@ -144,7 +124,7 @@ namespace AsterixDecoder.Models.CAT048
                 }
             }
 
-            // FRN 4 - I048/040 - Measured Position
+            // FRN 4 - I048/040 - Posición medida
             if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(4, recordEnd))
             {
                 int rho = data[currentByte] << 8 | data[currentByte + 1];
@@ -171,6 +151,7 @@ namespace AsterixDecoder.Models.CAT048
                 currentByte += 2;
                 if ((fl & 0x2000) != 0) fl |= unchecked((int)0xFFFFC000);
                 record.FlightLevel = fl; // Se guarda en quarters de FL
+                record.HasFlightLevel = true; // marcar presencia incluso si vale 0
             }
 
             // FRN 7 - I048/130 - Radar Plot Characteristics
@@ -451,13 +432,7 @@ namespace AsterixDecoder.Models.CAT048
                     7 => "Unknown",
                     _ => "Unknown"
                 };
-			
-			//// FX
-   //         if (fspecIndex < fspec.Count && fspec[fspecIndex++])
-   //         {
-   //             // Tercer octeto FSPEC
-   //         }
-
+            }
             // FRN 22 - I048/260 - ACAS Resolution Advisory
             if (fspecIndex < fspec.Count && fspec[fspecIndex++] && CheckBytes(7, recordEnd))
             {
@@ -498,7 +473,7 @@ namespace AsterixDecoder.Models.CAT048
             {
                 // Cuarto octeto FSPEC
             }
-            }
+            
         }
 
         private void DecodeModeSMBData(RawCat048Data record, int recordEnd)
@@ -521,12 +496,7 @@ namespace AsterixDecoder.Models.CAT048
                 block.RawData = new byte[8];
                 Array.Copy(data, currentByte, block.RawData, 0, 8);
                 currentByte += 8;
-
-                // IMPORTANTE: El formato de I048/250 según página 47 del PDF es:
-                // bits 64-9:  BDS DATA (56 bits = 7 bytes, índices 0-6)
-                // bits 8-5:   BDS1 (4 bits)
-                // bits 4-1:   BDS2 (4 bits)
-                // Por lo tanto, el BDS register está en el ÚLTIMO byte (índice 7)
+                
                 int bds1 = (block.RawData[7] >> 4) & 0x0F;
                 int bds2 = block.RawData[7] & 0x0F;
                 block.BDSRegister = (bds1 << 4) | bds2;
@@ -542,15 +512,13 @@ namespace AsterixDecoder.Models.CAT048
 
         private void DecodeBDS40(ModeSMBDataBlock block)
         {
-            // MCP/FCU Selected Altitude with status (bits 14-25 + status bit in bit 1 of byte0)
             bool mcpStatus = (block.RawData[0] & 0x80) != 0; // bit 1 of BDS 4.0 (MSB of byte 0 here)
             int mcpAlt = ((block.RawData[0] & 0x7F) << 5) | ((block.RawData[1] >> 3) & 0x1F);
             if (mcpStatus && mcpAlt != 0)
             {
                 block.MCP_FCU_SelectedAltitude = mcpAlt * 16; // feet
             }
-
-            // FMS Selected Altitude with status (bits 27-38 + status bit in byte1 bit 3)
+            
             bool fmsStatus = (block.RawData[1] & 0x04) != 0;
             int fmsAlt = ((block.RawData[1] & 0x03) << 10) | (block.RawData[2] << 2) | ((block.RawData[3] >> 6) & 0x03);
             if (fmsStatus && fmsAlt != 0)
@@ -558,7 +526,6 @@ namespace AsterixDecoder.Models.CAT048
                 block.FMS_SelectedAltitude = fmsAlt * 16; // feet
             }
 
-            // Barometric Pressure Setting with status (bits 29-18 + status bit in byte3 bit 6)
             bool bpsStatus = (block.RawData[3] & 0x20) != 0;
             double bps = ((block.RawData[3] & 0x1F) << 7) | ((block.RawData[4] >> 1) & 0x7F);
 
@@ -574,12 +541,6 @@ namespace AsterixDecoder.Models.CAT048
 
         private void DecodeBDS50(ModeSMBDataBlock block)
         {
-            // BDS 5.0 - Track and Turn Report
-            // Según I048/250: bits 64-9 contienen los datos BDS (7 octetos)
-            // block.RawData debería tener 8 octetos: [7 bytes de datos BDS][1 byte BDS code]
-            
-            // Para BDS 5.0, los datos están en los primeros 7 bytes (índices 0-6)            
-            // Roll Angle: bit 1 (status), bit 2 (sign), bits 3-11 (9 bits value)
             bool rollStatus = (block.RawData[0] & 0x80) != 0; // bit 1
             if (rollStatus)
             {
@@ -590,7 +551,6 @@ namespace AsterixDecoder.Models.CAT048
                 block.RollAngle = rollSign ? -rollAngle : rollAngle;
             }
             
-            // True Track Angle: bit 12 (status), bit 13 (sign), bits 14-23 (10 bits value)
             bool trackStatus = (block.RawData[1] & 0x10) != 0; // bit 12
             if (trackStatus)
             {
@@ -601,7 +561,6 @@ namespace AsterixDecoder.Models.CAT048
                 block.TrueTrackAngle = trackSign ? -trackAngle : trackAngle;
             }
             
-            // Ground Speed: bit 24 (status), bits 25-34 (10 bits value)
             bool gsStatus = (block.RawData[2] & 0x01) != 0; // bit 24
             if (gsStatus)
             {
@@ -612,7 +571,6 @@ namespace AsterixDecoder.Models.CAT048
                     block.GroundSpeed = 2046;
             }
             
-            // Track Angle Rate: bit 35 (status), bit 36 (sign), bits 37-45 (9 bits value)
             bool tarStatus = (block.RawData[4] & 0x20) != 0; // bit 35
             if (tarStatus)
             {
@@ -623,7 +581,6 @@ namespace AsterixDecoder.Models.CAT048
                 block.TrackAngleRate = tarSign ? -trackRate : trackRate;
             }
             
-            // True Airspeed: bit 46 (status), bits 47-56 (10 bits value)
             bool tasStatus = (block.RawData[5] & 0x04) != 0; // bit 46
             if (tasStatus)
             {
@@ -639,7 +596,6 @@ namespace AsterixDecoder.Models.CAT048
         {
             // BDS 6.0 - Heading and Speed Report
             
-            // Magnetic Heading: bit 0 (status), bit 1 (sign), bits 2-11 (10 bits value)
             bool hdgStatus = (block.RawData[0] & 0x80) != 0; // bit 0
             if (hdgStatus)
             {
@@ -652,7 +608,6 @@ namespace AsterixDecoder.Models.CAT048
                     block.MagneticHeading = hdgValue * 90.0 / 512.0;
             }
             
-            // Indicated Airspeed: bit 12 (status), bits 13-22 (10 bits value)
             bool iasStatus = (block.RawData[1] & 0x08) != 0; // bit 12
             if (iasStatus)
             {
@@ -660,7 +615,6 @@ namespace AsterixDecoder.Models.CAT048
                 block.IndicatedAirspeed = iasValue * 1.0; // LSB = 1 kt
             }
             
-            // Mach Number: bit 23 (status), bits 24-33 (10 bits value)
             bool machStatus = (block.RawData[2] & 0x01) != 0; // bit 23
             if (machStatus)
             {
@@ -671,7 +625,6 @@ namespace AsterixDecoder.Models.CAT048
                     block.MachNumber = 4.092;
             }
             
-            // Barometric Altitude Rate: bit 34 (status), bit 35 (sign), bits 36-44 (9 bits value)
             bool barStatus = (block.RawData[4] & 0x20) != 0; // bit 34
             if (barStatus)
             {
@@ -684,7 +637,6 @@ namespace AsterixDecoder.Models.CAT048
                     block.BarometricAltitudeRate = barValue * 32.0;
             }
             
-            // Inertial Vertical Velocity: bit 45 (status), bit 46 (sign), bits 47-55 (9 bits value)
             bool ivvStatus = (block.RawData[5] & 0x04) != 0; // bit 45
             if (ivvStatus)
             {

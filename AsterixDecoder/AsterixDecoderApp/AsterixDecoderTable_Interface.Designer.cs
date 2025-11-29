@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(AsterixDecoderTable_Interface));
             cat_dataGridView = new DataGridView();
             csv_button = new Button();
             close_button = new Button();
@@ -39,15 +40,7 @@
             OnGround_checkBox = new CheckBox();
             transponderfijo_checkBox = new CheckBox();
             Purewhite_checkBox = new CheckBox();
-            label3 = new Label();
-            label4 = new Label();
-            label5 = new Label();
-            Latitude_textBox = new TextBox();
-            Longitude_textBox = new TextBox();
-            Latitude2_textbox = new TextBox();
-            Longuitude2_textbox = new TextBox();
             simulation_button = new Button();
-            filtergeo_button = new Button();
             ((System.ComponentModel.ISupportInitialize)cat_dataGridView).BeginInit();
             SuspendLayout();
             // 
@@ -55,6 +48,7 @@
             // 
             cat_dataGridView.AllowUserToAddRows = false;
             cat_dataGridView.AllowUserToDeleteRows = false;
+            cat_dataGridView.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             cat_dataGridView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             cat_dataGridView.Location = new Point(251, 0);
             cat_dataGridView.Name = "cat_dataGridView";
@@ -64,6 +58,7 @@
             // 
             // csv_button
             // 
+            csv_button.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             csv_button.Location = new Point(128, 615);
             csv_button.Name = "csv_button";
             csv_button.Size = new Size(110, 35);
@@ -74,6 +69,7 @@
             // 
             // close_button
             // 
+            close_button.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             close_button.Location = new Point(12, 615);
             close_button.Name = "close_button";
             close_button.Size = new Size(110, 35);
@@ -166,66 +162,9 @@
             Purewhite_checkBox.UseVisualStyleBackColor = true;
             Purewhite_checkBox.CheckedChanged += Purewhite_checkBox_CheckedChanged;
             // 
-            // label3
-            // 
-            label3.AutoSize = true;
-            label3.Location = new Point(12, 273);
-            label3.Name = "label3";
-            label3.Size = new Size(95, 15);
-            label3.TabIndex = 18;
-            label3.Text = "Filtro Geografico";
-            // 
-            // label4
-            // 
-            label4.AutoSize = true;
-            label4.Location = new Point(87, 312);
-            label4.Name = "label4";
-            label4.Size = new Size(60, 15);
-            label4.TabIndex = 19;
-            label4.Text = "- Latitud -";
-            label4.Click += label4_Click;
-            // 
-            // label5
-            // 
-            label5.AutoSize = true;
-            label5.Location = new Point(84, 353);
-            label5.Name = "label5";
-            label5.Size = new Size(74, 15);
-            label5.TabIndex = 20;
-            label5.Text = "- Longitud - ";
-            // 
-            // Latitude_textBox
-            // 
-            Latitude_textBox.Location = new Point(27, 304);
-            Latitude_textBox.Name = "Latitude_textBox";
-            Latitude_textBox.Size = new Size(47, 23);
-            Latitude_textBox.TabIndex = 21;
-            Latitude_textBox.TextChanged += Latitude_textBox_TextChanged;
-            // 
-            // Longitude_textBox
-            // 
-            Longitude_textBox.Location = new Point(27, 345);
-            Longitude_textBox.Name = "Longitude_textBox";
-            Longitude_textBox.Size = new Size(47, 23);
-            Longitude_textBox.TabIndex = 22;
-            Longitude_textBox.TextChanged += Longitude_textBox_TextChanged;
-            // 
-            // Latitude2_textbox
-            // 
-            Latitude2_textbox.Location = new Point(166, 304);
-            Latitude2_textbox.Name = "Latitude2_textbox";
-            Latitude2_textbox.Size = new Size(47, 23);
-            Latitude2_textbox.TabIndex = 23;
-            // 
-            // Longuitude2_textbox
-            // 
-            Longuitude2_textbox.Location = new Point(166, 345);
-            Longuitude2_textbox.Name = "Longuitude2_textbox";
-            Longuitude2_textbox.Size = new Size(47, 23);
-            Longuitude2_textbox.TabIndex = 24;
-            // 
             // simulation_button
             // 
+            simulation_button.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             simulation_button.Location = new Point(12, 574);
             simulation_button.Name = "simulation_button";
             simulation_button.Size = new Size(226, 35);
@@ -234,30 +173,12 @@
             simulation_button.UseVisualStyleBackColor = true;
             simulation_button.Click += simulation_button_Click;
             // 
-            // filtergeo_button
-            // 
-            filtergeo_button.Location = new Point(12, 390);
-            filtergeo_button.Name = "filtergeo_button";
-            filtergeo_button.Size = new Size(226, 35);
-            filtergeo_button.TabIndex = 26;
-            filtergeo_button.Text = "Aplicar filtro";
-            filtergeo_button.UseVisualStyleBackColor = true;
-            filtergeo_button.Click += filtergeo_button_Click;
-            // 
             // AsterixDecoderTable_Interface
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1671, 669);
-            Controls.Add(filtergeo_button);
             Controls.Add(simulation_button);
-            Controls.Add(Longuitude2_textbox);
-            Controls.Add(Latitude2_textbox);
-            Controls.Add(Longitude_textBox);
-            Controls.Add(Latitude_textBox);
-            Controls.Add(label5);
-            Controls.Add(label4);
-            Controls.Add(label3);
             Controls.Add(OnGround_checkBox);
             Controls.Add(transponderfijo_checkBox);
             Controls.Add(Purewhite_checkBox);
@@ -269,8 +190,10 @@
             Controls.Add(close_button);
             Controls.Add(csv_button);
             Controls.Add(cat_dataGridView);
+            Icon = (Icon)resources.GetObject("$this.Icon");
             Name = "AsterixDecoderTable_Interface";
-            Text = "AsterixDecoderTable_Interface";
+            Text = "Asterix Decoder Table";
+            Load += AsterixDecoderTable_Interface_Load;
             ((System.ComponentModel.ISupportInitialize)cat_dataGridView).EndInit();
             ResumeLayout(false);
             PerformLayout();
@@ -289,14 +212,6 @@
         private CheckBox OnGround_checkBox;
         private CheckBox transponderfijo_checkBox;
         private CheckBox Purewhite_checkBox;
-        private Label label3;
-        private Label label4;
-        private Label label5;
-        private TextBox Latitude_textBox;
-        private TextBox Longitude_textBox;
-        private TextBox Latitude2_textbox;
-        private TextBox Longuitude2_textbox;
         private Button simulation_button;
-        private Button filtergeo_button;
     }
 }
